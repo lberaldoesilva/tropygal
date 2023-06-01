@@ -1,2 +1,2 @@
-$\texttt{galdynentropy}$ is a pure-python package for entropy
+$\texttt{galentropy}$ is a pure-python package for entropy
 estimates in the context of galacitc dynamics. To be improved...
