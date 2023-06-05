@@ -35,8 +35,7 @@ def V_d(dim):
     
     return np.pi**(dim/2.)/Gamma(dim/2. + 1)
 # -----------------------
-
-def avg_ln_f(dim, N, data):
+def avg_ln_f(data):
     """ average of ln(f) over the sample
 
     This is defined as (1/N) * sum_i=1^N ln(f_i),
@@ -46,11 +45,7 @@ def avg_ln_f(dim, N, data):
 
     Parameters
     ----------
-    dim: int
-       Dimension of phase-space
-    N: int
-       Number of data points
-    data: array [dim, N]
+    data: array [N, dim]
        Data points
 
     Returns
@@ -58,6 +53,19 @@ def avg_ln_f(dim, N, data):
     float
        <ln(f)> = (1/N) * sum_i=1^N ln(f_i)
     """
+
+    if (len(np.shape(data)) == 1):
+        dim = 1
+        data = np.reshape(data, (len(data), 1))
+    elif (len(np.shape(data)) == 2):
+        dim = np.shape(data)[1]
+    else:
+        print ('Array with data should be of form [N, dim]')
+        return np.nan
+    print ('dim:', dim)
+    
+    N = np.shape(data)[0]
+    
     tree = KDTree(data, leafsize=10) # default leafsize=10
     dist, ind = tree.query(data, k=2, workers=-1) # workers is number of threads. -1 means all threads
     idx = np.where(dist[:,1]>0)[0]
@@ -71,25 +79,22 @@ def avg_ln_f(dim, N, data):
     ln_f = -np.log(N-1.) - np.euler_gamma - np.log(V_d(dim)) - dim*ln_D
     return np.mean(ln_f)
 #-----------------------------
-def entropy(dim, N, data, J=1):
+def entropy(data, J=1):
     """
     Estimate of Boltzmann/Shannon entropy
-    S = - int f' ln (f'/J) d^dim x'
-    Here f' and x' are assumed to be dimensionless
-    Also, x' is typically of order unit, i.e. x' ~ x/sigma_x,
-    where sigma_x is a measure of the dispersion of the physical quantity x
+    S = - int f ln (f/J) d^dim x
+    The factor J ensures that f/J is dimensionless and 
+    that S is invariant for changes of variable x -> x', in which case J = |del x' / del x|
+    For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.
+    So, if x and f are dimensionless and x is order unit, we can define J = 1.
 
     Parameters
     ----------
-    dim: int
-       Dimension of phase-space
-    N: int
-       Number of data points
-    data: array [dim, N]
+    data: array [N, dim]
        Data points
-    J: float number
-       J = |del x/del x'| is the jacobian of transf. from (x, y,...) -> (x', y', ...)
-       If x' = x/sigma_x, y' = y/sigma_y... -> J = |sigma_x*sigma_y...|
+    J: float number or array of size N
+       J = |del x'/del x| is the jacobian of transf. from (x, y,...) -> (x', y', ...)
+       If x' = x/sigma_x, y' = y/sigma_y... -> J = 1/|sigma_x*sigma_y...|
 
     Returns
     -------
@@ -98,4 +103,5 @@ def entropy(dim, N, data, J=1):
     """
     
     avg_ln_J = np.mean(np.log(J))
-    return -avg_ln_f(dim, N, data) + avg_ln_J
+    
+    return -avg_ln_f(data) + avg_ln_J
