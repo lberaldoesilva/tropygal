@@ -5,7 +5,6 @@ from scipy.spatial import KDTree
 from scipy import integrate
 
 pi2 = np.pi**2.
-# Testing commit
 
 #-----------------
 def V_d(dim):
