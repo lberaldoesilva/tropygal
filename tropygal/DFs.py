@@ -24,7 +24,10 @@ def gEL_Isochrone(E, L, M, G=_G):
 
 #------------------------
 def Tr_Spherical(coords, pot):
-    J, theta, Omega = agama.actions(potential=pot, point=coords, angles=True)
+    actF = agama.ActionFinder(pot)
+    Omega = actF(coords, actions=False, frequencies=True, angles=False)
+#    Jr, Jtheta, Jphi = Omega[:,0], Omega[:,1], Omega[:,2]
+#    J, theta, Omega = agama.actions(potential=pot, point=coords, angles=True)
     Om_r = Omega[:,0]
     return (2.*np.pi)/Om_r
 

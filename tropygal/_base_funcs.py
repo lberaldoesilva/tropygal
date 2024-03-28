@@ -36,7 +36,7 @@ def V_d(dim):
     
     return np.pi**(dim/2.)/Gamma(dim/2. + 1)
 #-----------------------------
-def entropy(data, mu=1, k=1):
+def entropy(data, mu=1, k=1, correct_bias=False):
     """
     Estimate of (Shannon/Jaynes) differential entropy
     S = - int f ln (f/mu) d^dim x
@@ -66,6 +66,8 @@ def entropy(data, mu=1, k=1):
        depends only on energy, or energy and angular momentum
     k: int value
        kth nearest neighbor
+    correct_bias: Boolean
+       if correct for bias due to boundary effects as proposed by Charzynska & Gambin 2015
 
     Returns
     -------
@@ -85,7 +87,8 @@ def entropy(data, mu=1, k=1):
     N = np.shape(data)[0]
     
     tree = KDTree(data, leafsize=10) # default leafsize=10
-    dist, ind = tree.query(data, k=k+1, workers=-1) # workers is number of threads. -1 means all threads
+    
+    dist, ind = tree.query(data, k=k+1, workers=-1) # workers is number of threads. -1 means all threads; k+1 because the first is the particle itself
     dist_kNN = dist[:,k]
     
     idx = np.where(dist_kNN > 0)[0]
@@ -100,10 +103,25 @@ def entropy(data, mu=1, k=1):
 #    ln_f = -psi(N) + psi(k) - np.log(V_d(dim)) - dim*ln_D
     avg_ln_f = np.mean(-np.log(N-1.) + psi(k) - np.log(V_d(dim)) - dim*ln_D)
     avg_ln_mu = np.mean(np.log(mu))
-    
-    return -avg_ln_f + avg_ln_mu
+
+    if (correct_bias==True):
+        data = data[idx] # consider only data points with positive distance to NN
+        dist_kNN = dist_kNN[idx]
+        log_frac_vol = np.zeros_like(idx)
+        
+        for j in range(dim):
+            xmax = max(data[:, j])
+            xmin = min(data[:, j])
+            x_over_d = data[:, j]/dist_kNN
+            # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/dist_kNN, x_over_d + 0.5) - np.maximum(xmin/dist_kNN, x_over_d - 0.5))
+
+        correction = np.mean(log_frac_vol)
+        return -avg_ln_f + avg_ln_mu + correction
+    else:
+        return -avg_ln_f + avg_ln_mu
 #-----------------------------
-def cross_entropy(data1, data2, mu=1, k=1):
+def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False):
     """
     Estimate of the cross entropy
     H = - int f0 ln (f/mu) d^dim x
@@ -134,6 +152,8 @@ def cross_entropy(data1, data2, mu=1, k=1):
        If x' = x/sigma_x, y' = y/sigma_y... -> mu = 1/|sigma_x*sigma_y...|
     k: int value
        kth nearest neighbor
+    correct_bias: Boolean
+       if correct for bias due to boundary effects as proposed by Charzynska & Gambin 2015
 
     Returns
     -------
@@ -146,7 +166,7 @@ def cross_entropy(data1, data2, mu=1, k=1):
         return np.nan
     if (len(np.shape(data1)) == 1):
         dim = 1
-        data1 = np.reshape(data1, (len(data), 1))
+        data1 = np.reshape(data1, (len(data1), 1))
         data2 = np.reshape(data2, (len(data2), 1))
     elif (len(np.shape(data1)) == 2):
         dim = np.shape(data1)[1]
@@ -159,6 +179,11 @@ def cross_entropy(data1, data2, mu=1, k=1):
     
     tree = KDTree(data2, leafsize=10) # default leafsize=10
     dist, ind = tree.query(data1, k=k+1, workers=-1) # workers is number of threads. -1 means all threads
+    #dist, ind = tree.query(data1, k=k, workers=-1) # workers is number of threads. -1 means all threads
+    # if (k==1):
+    #     dist_kNN = dist
+    # else:
+    #     dist_kNN = dist[:,k-1] # changed here too in respect to entropy
     dist_kNN = dist[:,k]
     
     idx = np.where(dist_kNN > 0)[0]
@@ -171,8 +196,26 @@ def cross_entropy(data1, data2, mu=1, k=1):
     ln_D = np.log(dist_kNN[idx])
     avg_ln_f = np.mean(-np.log(M) + psi(k) - np.log(V_d(dim)) - dim*ln_D)
     avg_ln_mu = np.mean(np.log(mu))
-    
-    return -avg_ln_f + avg_ln_mu
+
+    if (correct_bias==True):
+        data1 = data1[idx] # consider only data points with positive distance to NN
+        dist_kNN = dist_kNN[idx]
+        log_frac_vol = np.zeros_like(idx)
+        
+        for j in range(dim):
+            # the support [xmin, xmax] is defined by the sample f used to buid the DF
+            xmax = max(data2[:, j])
+            xmin = min(data2[:, j])
+            # To handle points of f_0 that are out of the support of f:
+            # x_over_d = data1[:, j]/dist_kNN
+            x_over_d = np.minimum(np.maximum(data1[:, j], xmin), xmax)/dist_kNN
+            # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/dist_kNN, x_over_d + 0.5) - np.maximum(xmin/dist_kNN, x_over_d - 0.5))
+
+        correction = np.mean(log_frac_vol)
+        return -avg_ln_f + avg_ln_mu + correction
+    else:
+        return -avg_ln_f + avg_ln_mu
 #-----------------------------
 def C_k(q, k=1):
     """
