@@ -26,15 +26,48 @@ def V_d(dim):
     if (dim==2):
         return np.pi
     if (dim==3):
-        return 4.*np.pi/3.
+        # return 4.*np.pi/3.
+        return 4.18879020478639
     if (dim==4):
-        return pi2/2.
+        # return pi2/2.
+        return 4.93480220054468
     if (dim==5):
-        return 8.*pi2/15.
+        # return 8.*pi2/15.
+        return 5.26378901391432
     if (dim==6):
-        return pi2*np.pi/6.
+        # return pi2*np.pi/6.
+        return 5.16771278004997 # From here, V_d starts decreasing with d (that's the curse of dimensionality)
     
     return np.pi**(dim/2.)/Gamma(dim/2. + 1)
+#-----------------------------
+def l_cube(dim):
+    """ the side of a hyper-cube with same volume as the (unit-radius) hyper-sphere in dimension d
+
+    Parameters
+    ----------
+    dim: int
+         dimension
+
+    Returns
+    -------
+    float number
+      (V_dim)^(1/dim) = {[pi^(dim/2.)]/Gamma(dim/2. + 1)}^(1/dim)
+    """
+    # Particular cases (for performance):
+    if (dim==1):
+        return 2.
+    if (dim==2):
+        return 1.772453850905516
+    if (dim==3):
+        return 1.611991954016470
+    if (dim==4):
+        return 1.490450089429090
+    if (dim==5):
+        return 1.393990116738068
+    if (dim==6):
+        return 1.3148707406569993
+
+    return V_d(dim)**(1./dim)
 #-----------------------------
 def entropy(data, mu=1, k=1, correct_bias=False):
     """
@@ -112,9 +145,9 @@ def entropy(data, mu=1, k=1, correct_bias=False):
         for j in range(dim):
             xmax = max(data[:, j])
             xmin = min(data[:, j])
-            x_over_d = data[:, j]/dist_kNN
+            x_over_d = data[:, j]/(l_cube(dim)*dist_kNN)
             # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/dist_kNN, x_over_d + 0.5) - np.maximum(xmin/dist_kNN, x_over_d - 0.5))
+            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube(dim)*dist_kNN), x_over_d + 0.5) - np.maximum(xmin/(l_cube(dim)*dist_kNN), x_over_d - 0.5))
 
         correction = np.mean(log_frac_vol)
         return -avg_ln_f + avg_ln_mu + correction
@@ -208,9 +241,9 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False):
             xmin = min(data2[:, j])
             # To handle points of f_0 that are out of the support of f:
             # x_over_d = data1[:, j]/dist_kNN
-            x_over_d = np.minimum(np.maximum(data1[:, j], xmin), xmax)/dist_kNN
+            x_over_d = np.minimum(np.maximum(data1[:, j], xmin), xmax)/(l_cube(dim)*dist_kNN)
             # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/dist_kNN, x_over_d + 0.5) - np.maximum(xmin/dist_kNN, x_over_d - 0.5))
+            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube(dim)*dist_kNN), x_over_d + 0.5) - np.maximum(xmin/(l_cube(dim)*dist_kNN), x_over_d - 0.5))
 
         correction = np.mean(log_frac_vol)
         return -avg_ln_f + avg_ln_mu + correction
