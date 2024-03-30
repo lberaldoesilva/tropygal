@@ -141,13 +141,15 @@ def entropy(data, mu=1, k=1, correct_bias=False):
         data = data[idx] # consider only data points with positive distance to NN
         dist_kNN = dist_kNN[idx]
         log_frac_vol = np.zeros_like(idx)
+
+        K = np.exp(psi(k)/dim) / l_cube(dim)
         
         for j in range(dim):
             xmax = max(data[:, j])
             xmin = min(data[:, j])
-            x_over_d = data[:, j]/(l_cube(dim)*dist_kNN)
+            x_over_d = K * data[:, j]/dist_kNN
             # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube(dim)*dist_kNN), x_over_d + 0.5) - np.maximum(xmin/(l_cube(dim)*dist_kNN), x_over_d - 0.5))
+            log_frac_vol = log_frac_vol + np.log(np.minimum(K * xmax/dist_kNN, x_over_d + 0.5) - np.maximum(K * xmin/dist_kNN, x_over_d - 0.5))
 
         correction = np.mean(log_frac_vol)
         return -avg_ln_f + avg_ln_mu + correction
@@ -234,6 +236,8 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False):
         data1 = data1[idx] # consider only data points with positive distance to NN
         dist_kNN = dist_kNN[idx]
         log_frac_vol = np.zeros_like(idx)
+
+        K = np.exp(psi(k)/dim) / l_cube(dim)
         
         for j in range(dim):
             # the support [xmin, xmax] is defined by the sample f used to buid the DF
@@ -241,9 +245,9 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False):
             xmin = min(data2[:, j])
             # To handle points of f_0 that are out of the support of f:
             # x_over_d = data1[:, j]/dist_kNN
-            x_over_d = np.minimum(np.maximum(data1[:, j], xmin), xmax)/(l_cube(dim)*dist_kNN)
+            x_over_d = K * np.minimum(np.maximum(data1[:, j], xmin), xmax)/dist_kNN
             # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-            log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube(dim)*dist_kNN), x_over_d + 0.5) - np.maximum(xmin/(l_cube(dim)*dist_kNN), x_over_d - 0.5))
+            log_frac_vol = log_frac_vol + np.log(np.minimum(K * xmax/dist_kNN, x_over_d + 0.5) - np.maximum(K * xmin/dist_kNN, x_over_d - 0.5))
 
         correction = np.mean(log_frac_vol)
         return -avg_ln_f + avg_ln_mu + correction
