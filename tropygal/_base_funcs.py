@@ -36,11 +36,11 @@ def V_d(dim):
         return 5.26378901391432
     if (dim==6):
         # return pi2*np.pi/6.
-        return 5.16771278004997 # From here, V_d starts decreasing with d (that's the curse of dimensionality)
+        return 5.16771278004997 # From here, V_d starts decreasing with d (the curse of dimensionality)
     
     return np.pi**(dim/2.)/Gamma(dim/2. + 1)
 #-----------------------------
-def l_cube(dim):
+def l_cube_sph(dim):
     """ the side of a hyper-cube with same volume as the (unit-radius) hyper-sphere in dimension d
 
     Parameters
@@ -69,7 +69,7 @@ def l_cube(dim):
 
     return V_d(dim)**(1./dim)
 #-----------------------------
-def entropy(data, mu=1, k=1, correct_bias=False):
+def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1):
     """
     Estimate of (Shannon/Jaynes) differential entropy
     S = - int f ln (f/mu) d^dim x
@@ -100,7 +100,9 @@ def entropy(data, mu=1, k=1, correct_bias=False):
     k: int value
        kth nearest neighbor
     correct_bias: Boolean
-       if correct for bias due to boundary effects as proposed by Charzynska & Gambin 2015
+       If correct for bias due to boundary effects as proposed by Charzynska & Gambin 2015
+    l_cube: float
+       To correct bias, side of cube around particle (in units of d_NN)
 
     Returns
     -------
@@ -142,7 +144,7 @@ def entropy(data, mu=1, k=1, correct_bias=False):
         dist_kNN = dist_kNN[idx]
         log_frac_vol = np.zeros_like(idx)
 
-        K = np.exp(psi(k)/dim) / l_cube(dim)
+        K = np.exp(psi(k)/dim) / l_cube
         
         for j in range(dim):
             xmax = max(data[:, j])
@@ -156,7 +158,7 @@ def entropy(data, mu=1, k=1, correct_bias=False):
     else:
         return -avg_ln_f + avg_ln_mu
 #-----------------------------
-def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False):
+def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, l_cube=1):
     """
     Estimate of the cross entropy
     H = - int f0 ln (f/mu) d^dim x
@@ -189,6 +191,8 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False):
        kth nearest neighbor
     correct_bias: Boolean
        if correct for bias due to boundary effects as proposed by Charzynska & Gambin 2015
+    l_cube: float
+       To correct bias, side of cube around particle (in units of d_NN)
 
     Returns
     -------
@@ -237,7 +241,7 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False):
         dist_kNN = dist_kNN[idx]
         log_frac_vol = np.zeros_like(idx)
 
-        K = np.exp(psi(k)/dim) / l_cube(dim)
+        K = np.exp(psi(k)/dim) / l_cube
         
         for j in range(dim):
             # the support [xmin, xmax] is defined by the sample f used to buid the DF
