@@ -69,7 +69,7 @@ def l_cube_sph(dim):
 
     return V_d(dim)**(1./dim)
 #-----------------------------
-def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1):
+def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1, workers=-1):
     """
     Estimate of (Shannon/Jaynes) differential entropy
     S = - int f ln (f/mu) d^dim x
@@ -123,7 +123,7 @@ def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1):
     
     tree = KDTree(data, leafsize=10) # default leafsize=10
     
-    dist, ind = tree.query(data, k=k+1, workers=-1) # workers is number of threads. -1 means all threads; k+1 because the first is the particle itself
+    dist, ind = tree.query(data, k=k+1, workers=workers) # workers is number of threads. -1 means all threads; k+1 because the first is the particle itself
     dist_kNN = dist[:,k]
     
     idx = np.where(dist_kNN > 0)[0]
@@ -158,7 +158,7 @@ def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1):
     else:
         return -avg_ln_f + avg_ln_mu
 #-----------------------------
-def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, l_cube=1):
+def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, l_cube=1, workers=-1):
     """
     Estimate of the cross entropy
     H = - int f0 ln (f/mu) d^dim x
@@ -217,7 +217,7 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, l_cube=1):
     M = np.shape(data2)[0]
     
     tree = KDTree(data2, leafsize=10) # default leafsize=10
-    dist, ind = tree.query(data1, k=k+1, workers=-1) # workers is number of threads. -1 means all threads
+    dist, ind = tree.query(data1, k=k+1, workers=workers) # workers is number of threads. -1 means all threads
     #dist, ind = tree.query(data1, k=k, workers=-1) # workers is number of threads. -1 means all threads
     # if (k==1):
     #     dist_kNN = dist
