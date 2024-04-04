@@ -146,14 +146,24 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', workers=
         log_frac_vol = np.zeros_like(idx)
 
         if (vol_correction=='cube'):
-            l_cube = 2./np.sqrt(dim) # side of cube inscribed in hypersphere or radius D=1
+            l_cube = 2./np.sqrt(dim) # side of cube (divided by D) inscribed in hypersphere of radius D.
         
             for j in range(dim):
                 xmax = max(data[:, j])
                 xmin = min(data[:, j])
-                x_over_D = data[:, j]/(l_cube*dist_kNN)
-                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-                log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube*dist_kNN), x_over_D + 0.5) - np.maximum(xmin/(l_cube*dist_kNN), x_over_D - 0.5))
+
+                dx_max_over_D = (xmax - data[:, j])/dist_kNN # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
+                dx_min_over_D = (data[:, j] - xmin)/dist_kNN # we only need to correct if this is < 1
+
+                needs_correc = dx_max_over_D < 1
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_D[needs_correc] / l_cube)
+
+                needs_correc = dx_min_over_D < 1
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_D[needs_correc] / l_cube)
+                
+                # x_over_D = data[:, j]/(l_cube*dist_kNN)
+                # # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+                # log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube*dist_kNN), x_over_D + 0.5) - np.maximum(xmin/(l_cube*dist_kNN), x_over_D - 0.5))
                 
             correction = np.mean(log_frac_vol)
         elif (vol_correction=='sph'):
