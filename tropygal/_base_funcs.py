@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import gamma as Gamma
 from scipy.special import psi # digamma function
+from scipy.special import betainc
 from scipy.spatial import KDTree
 from scipy import integrate
 
@@ -40,36 +41,36 @@ def V_d(dim):
     
     return np.pi**(dim/2.)/Gamma(dim/2. + 1)
 #-----------------------------
-def l_cube_sph(dim):
-    """ the side of a hyper-cube with same volume as the (unit-radius) hyper-sphere in dimension d
+# def l_cube_sph(dim):
+#     """ the side of a hyper-cube with same volume as the (unit-radius) hyper-sphere in dimension d
 
-    Parameters
-    ----------
-    dim: int
-         dimension
+#     Parameters
+#     ----------
+#     dim: int
+#          dimension
 
-    Returns
-    -------
-    float number
-      (V_dim)^(1/dim) = {[pi^(dim/2.)]/Gamma(dim/2. + 1)}^(1/dim)
-    """
-    # Particular cases (for performance):
-    if (dim==1):
-        return 2.
-    if (dim==2):
-        return 1.772453850905516
-    if (dim==3):
-        return 1.611991954016470
-    if (dim==4):
-        return 1.490450089429090
-    if (dim==5):
-        return 1.393990116738068
-    if (dim==6):
-        return 1.3148707406569993
+#     Returns
+#     -------
+#     float number
+#       (V_dim)^(1/dim) = {[pi^(dim/2.)]/Gamma(dim/2. + 1)}^(1/dim)
+#     """
+#     # Particular cases (for performance):
+#     if (dim==1):
+#         return 2.
+#     if (dim==2):
+#         return 1.772453850905516
+#     if (dim==3):
+#         return 1.611991954016470
+#     if (dim==4):
+#         return 1.490450089429090
+#     if (dim==5):
+#         return 1.393990116738068
+#     if (dim==6):
+#         return 1.3148707406569993
 
-    return V_d(dim)**(1./dim)
+#     return V_d(dim)**(1./dim)
 #-----------------------------
-def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1, workers=-1):
+def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', workers=-1):
     """
     Estimate of (Shannon/Jaynes) differential entropy
     S = - int f ln (f/mu) d^dim x
@@ -101,8 +102,8 @@ def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1, workers=-1):
        kth nearest neighbor
     correct_bias: Boolean
        If correct for bias due to boundary effects as proposed by Charzynska & Gambin 2015
-    l_cube: float
-       To correct bias, side of cube around particle (in units of d_NN)
+    workers: int (default: -1)
+       Number of CPUs to be used to parallelize the seacrh for NNs.
 
     Returns
     -------
@@ -144,16 +145,40 @@ def entropy(data, mu=1, k=1, correct_bias=False, l_cube=1, workers=-1):
         dist_kNN = dist_kNN[idx]
         log_frac_vol = np.zeros_like(idx)
 
-        K = np.exp(psi(k)/dim) / l_cube
+        if (vol_correction=='cube'):
+            l_cube = 2./np.sqrt(dim) # side of cube inscribed in hypersphere or radius D=1
         
-        for j in range(dim):
-            xmax = max(data[:, j])
-            xmin = min(data[:, j])
-            x_over_d = K * data[:, j]/dist_kNN
-            # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-            log_frac_vol = log_frac_vol + np.log(np.minimum(K * xmax/dist_kNN, x_over_d + 0.5) - np.maximum(K * xmin/dist_kNN, x_over_d - 0.5))
+            for j in range(dim):
+                xmax = max(data[:, j])
+                xmin = min(data[:, j])
+                x_over_D = data[:, j]/(l_cube*dist_kNN)
+                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+                log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube*dist_kNN), x_over_D + 0.5) - np.maximum(xmin/(l_cube*dist_kNN), x_over_D - 0.5))
+                
+            correction = np.mean(log_frac_vol)
+        elif (vol_correction=='sph'):
+            global_min_dx_over_D = np.full(N, 1e+20) # initialize with large values
+            
+            for j in range(dim):
+                xmax = max(data[:, j])
+                xmin = min(data[:, j])
 
-        correction = np.mean(log_frac_vol)
+                dx_max_over_D = (xmax - data[:, j])/dist_kNN # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
+                dx_min_over_D = (data[:, j] - xmin)/dist_kNN # we only need to correct if this is < 1
+                # In this case, we only correct for the dimension where the volume outside its domain is largest:
+                global_min_dx_over_D = np.minimum(dx_max_over_D, global_min_dx_over_D)
+                global_min_dx_over_D = np.minimum(dx_min_over_D, global_min_dx_over_D)
+
+            needs_correc = global_min_dx_over_D < 1
+
+            # theta is half the central angle covering the cap -- see https://en.wikipedia.org/wiki/Spherical_cap
+            # and it is such that cos theta = (xmax - x)/D and so on...
+            sin_sq_theta = 1. - global_min_dx_over_D[needs_correc]**2 
+            # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+            log_frac_vol = np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
+            correction = np.mean(log_frac_vol)
+        else:
+            correction = 0
         return -avg_ln_f + avg_ln_mu + correction
     else:
         return -avg_ln_f + avg_ln_mu
@@ -248,10 +273,10 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, l_cube=1, workers
             xmax = max(data2[:, j])
             xmin = min(data2[:, j])
             # To handle points of f_0 that are out of the support of f:
-            # x_over_d = data1[:, j]/dist_kNN
-            x_over_d = K * np.minimum(np.maximum(data1[:, j], xmin), xmax)/dist_kNN
+            # x_over_D = data1[:, j]/dist_kNN
+            x_over_D = K * np.minimum(np.maximum(data1[:, j], xmin), xmax)/dist_kNN
             # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-            log_frac_vol = log_frac_vol + np.log(np.minimum(K * xmax/dist_kNN, x_over_d + 0.5) - np.maximum(K * xmin/dist_kNN, x_over_d - 0.5))
+            log_frac_vol = log_frac_vol + np.log(np.minimum(K * xmax/dist_kNN, x_over_D + 0.5) - np.maximum(K * xmin/dist_kNN, x_over_D - 0.5))
 
         correction = np.mean(log_frac_vol)
         return -avg_ln_f + avg_ln_mu + correction
