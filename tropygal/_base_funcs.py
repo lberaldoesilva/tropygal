@@ -70,7 +70,7 @@ def V_d(dim):
 
 #     return V_d(dim)**(1./dim)
 #-----------------------------
-def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', workers=-1):
+def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
     """
     Estimate of (Shannon/Jaynes) differential entropy
     S = - int f ln (f/mu) d^dim x
@@ -143,11 +143,76 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', workers=
     if (correct_bias==True):
         data = data[idx] # consider only data points with positive distance to NN
         dist_kNN = dist_kNN[idx]
-        log_frac_vol = np.zeros_like(idx)
-
-        if (vol_correction=='cube'):
-            l_cube = 2./np.sqrt(dim) # side of cube (divided by D) inscribed in hypersphere of radius D.
+        # The fraction of the volume around particle i inside the domain:
+        log_frac_vol = np.zeros(len(idx))
         
+        if (vol_correction=='cube'):
+            # l_cube = (2/np.sqrt(dim)) * dist_kNN
+#            l_cube = l_cube_sph(dim)*dist_kNN
+            l_cube = l_cube_over_d * dist_kNN
+            for j in range(dim):
+                xmax = max(data[:, j])
+                xmin = min(data[:, j])
+
+                dx_max_over_l_cube = (xmax - data[:, j]) / l_cube # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
+                dx_min_over_l_cube = (data[:, j] - xmin) / l_cube # we only need to correct if this is < 1
+
+                needs_correc = dx_max_over_l_cube < 0.5
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
+
+                needs_correc = dx_min_over_l_cube < 0.5
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
+                
+                # x_over_l_cube = data[:, j]/(l_cube*dist_kNN)
+                # # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+                # log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube), x_over_l_cube + 0.5) - np.maximum(xmin/(l_cube), x_over_l_cube - 0.5))
+                
+            correction = np.mean(log_frac_vol)
+        elif (vol_corrections=='actions'):
+            # assert dim = 3
+            # need to be sure about order of actions: [Jr, Jz, Jphi].
+            
+            l_cube = l_cube_over_d * dist_kNN
+            # for Jr and Jz, it's identical to the case vol_correction = 'cube'
+            for j in range(dim-1): # note loop over first two components
+                xmax = max(data[:, j])
+                xmin = min(data[:, j])
+
+                dx_max_over_l_cube = (xmax - data[:, j]) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
+                dx_min_over_l_cube = (data[:, j] - xmin) / l_cube # we only need to correct if this is < 0.5
+
+                needs_correc = dx_max_over_l_cube < 0.5
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
+
+                needs_correc = dx_min_over_l_cube < 0.5
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
+
+            # for J_phi, we need to make projections to the normal to the upper planes on action tetrahedron (see BT fig. 3.25)
+            Jr_max = max(data[:, 0])
+            Jz_max = max(data[:, 1])
+            Jphi_min = min(data[:, 2])
+            Jphi_max = max(data[:, 2])
+
+            # normal vectors to upper planes on action tetrahedron (see BT fig. 3.25):
+            normal_A = np.array([Jr_max, Jz_max, Jphi_min]) / np.sqrt(Jr_max**2 + Jz_max**2 + Jphi_min**2)
+            normal_B = np.array([Jr_max, Jz_max, Jphi_max]) / np.sqrt(Jr_max**2 + Jz_max**2 + Jphi_max**2)
+
+            proj_A = np.dot(data, normal_A)
+            proj_B = np.dot(data, normal_B)
+
+            proj_A_max = max(proj_A)
+            proj_B_max = max(proj_B)
+            #------------------------
+            dx_max_over_l_cube = (proj_A_max - proj_A) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
+            
+            needs_correc = dx_max_over_l_cube < 0.5
+            log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
+
+            dx_max_over_l_cube = (proj_B_max - proj_B) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
+            
+            needs_correc = dx_max_over_l_cube < 0.5
+            log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])            
+        elif (vol_correction=='sph'):
             for j in range(dim):
                 xmax = max(data[:, j])
                 xmin = min(data[:, j])
@@ -156,36 +221,25 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', workers=
                 dx_min_over_D = (data[:, j] - xmin)/dist_kNN # we only need to correct if this is < 1
 
                 needs_correc = dx_max_over_D < 1
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_D[needs_correc] / l_cube)
+                sin_sq_theta = 1. - dx_max_over_D[needs_correc]**2 
+                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
 
                 needs_correc = dx_min_over_D < 1
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_D[needs_correc] / l_cube)
+                # theta is half the central angle covering the cap -- see https://en.wikipedia.org/wiki/Spherical_cap
+                # and it is such that cos theta = (xmax - x)/D and so on...
+                sin_sq_theta = 1. - dx_min_over_D[needs_correc]**2 
+                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
                 
-                # x_over_D = data[:, j]/(l_cube*dist_kNN)
-                # # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-                # log_frac_vol = log_frac_vol + np.log(np.minimum(xmax/(l_cube*dist_kNN), x_over_D + 0.5) - np.maximum(xmin/(l_cube*dist_kNN), x_over_D - 0.5))
-                
-            correction = np.mean(log_frac_vol)
-        elif (vol_correction=='sph'):
-            global_min_dx_over_D = np.full(N, 1e+20) # initialize with large values
-            
-            for j in range(dim):
-                xmax = max(data[:, j])
-                xmin = min(data[:, j])
+            #     # In this case, we only correct for the dimension where the volume outside its domain is largest:
+            #     global_min_dx_over_D = np.minimum(dx_max_over_D, global_min_dx_over_D)
+            #     global_min_dx_over_D = np.minimum(dx_min_over_D, global_min_dx_over_D)
 
-                dx_max_over_D = (xmax - data[:, j])/dist_kNN # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
-                dx_min_over_D = (data[:, j] - xmin)/dist_kNN # we only need to correct if this is < 1
-                # In this case, we only correct for the dimension where the volume outside its domain is largest:
-                global_min_dx_over_D = np.minimum(dx_max_over_D, global_min_dx_over_D)
-                global_min_dx_over_D = np.minimum(dx_min_over_D, global_min_dx_over_D)
-
-            needs_correc = global_min_dx_over_D < 1
-
-            # theta is half the central angle covering the cap -- see https://en.wikipedia.org/wiki/Spherical_cap
-            # and it is such that cos theta = (xmax - x)/D and so on...
-            sin_sq_theta = 1. - global_min_dx_over_D[needs_correc]**2 
-            # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-            log_frac_vol = np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
+            # needs_correc = global_min_dx_over_D < 1
+            # sin_sq_theta = 1. - global_min_dx_over_D[needs_correc]**2 
+            # # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
+            # log_frac_vol = np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
             correction = np.mean(log_frac_vol)
         else:
             correction = 0
@@ -274,7 +328,7 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, l_cube=1, workers
     if (correct_bias==True):
         data1 = data1[idx] # consider only data points with positive distance to NN
         dist_kNN = dist_kNN[idx]
-        log_frac_vol = np.zeros_like(idx)
+        log_frac_vol = np.zeros(len(idx))
 
         K = np.exp(psi(k)/dim) / l_cube
         
