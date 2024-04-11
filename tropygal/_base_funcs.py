@@ -308,17 +308,19 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
        cross entropy estimate -<ln(f/mu)> = - (1/N)*sum_i=1^N ln(f_i/mu_i)
     """
 
-    if (np.shape(data1) != np.shape(data2)):
-        print ('Both data arrays should be of form [N, dim]')
+    if (len(np.shape(data1)) != len(np.shape(data2))):
+        raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
         return np.nan
     if (len(np.shape(data1)) == 1):
         dim = 1
         data1 = np.reshape(data1, (len(data1), 1))
         data2 = np.reshape(data2, (len(data2), 1))
     elif (len(np.shape(data1)) == 2):
+        if (np.shape(data1)[1] != np.shape(data2)[1]):
+            raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
         dim = np.shape(data1)[1]
     else:
-        print ('Data arrays should be of form [N, dim]')
+        raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
         return np.nan
     
     N = np.shape(data1)[0]
@@ -337,7 +339,7 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
     N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero,  very small compared to N)
     
     if (N_zero_dist > 0):
-        print (N_zero_dist,' points with zero D_NN neglected')
+        print ("tropygal:", N_zero_dist,' points with zero D_NN neglected')
         N = N - N_zero_dist
 
     ln_D = np.log(dist_kNN[idx])
