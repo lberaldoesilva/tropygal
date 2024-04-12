@@ -360,8 +360,10 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
                 xmax = max(data2[:, j])
                 xmin = min(data2[:, j])
 
-                dx_max_over_l_cube = (xmax - data1[:, j]) / l_cube # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
-                dx_min_over_l_cube = (data1[:, j] - xmin) / l_cube # we only need to correct if this is < 1
+                y = np.minimum(np.maximum(data1[:, j], xmin), xmax)
+
+                dx_max_over_l_cube = (xmax - y) / l_cube # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
+                dx_min_over_l_cube = (y - xmin) / l_cube # we only need to correct if this is < 1
 
                 needs_correc = dx_max_over_l_cube < 0.5
                 log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
