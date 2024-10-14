@@ -5,8 +5,7 @@ from scipy.special import betainc
 from scipy.spatial import KDTree
 from scipy import integrate
 
-pi2 = np.pi**2.
-
+#pi2 = np.pi**2.
 #-----------------
 def V_d(dim):
     """ Volume of (unit-radius) hyper-sphere of dimension d
@@ -41,35 +40,6 @@ def V_d(dim):
     
     return np.pi**(dim/2.)/Gamma(dim/2. + 1)
 #-----------------------------
-# def l_cube_sph(dim):
-#     """ the side of a hyper-cube with same volume as the (unit-radius) hyper-sphere in dimension d
-
-#     Parameters
-#     ----------
-#     dim: int
-#          dimension
-
-#     Returns
-#     -------
-#     float number
-#       (V_dim)^(1/dim) = {[pi^(dim/2.)]/Gamma(dim/2. + 1)}^(1/dim)
-#     """
-#     # Particular cases (for performance):
-#     if (dim==1):
-#         return 2.
-#     if (dim==2):
-#         return 1.772453850905516
-#     if (dim==3):
-#         return 1.611991954016470
-#     if (dim==4):
-#         return 1.490450089429090
-#     if (dim==5):
-#         return 1.393990116738068
-#     if (dim==6):
-#         return 1.3148707406569993
-
-#     return V_d(dim)**(1./dim)
-#-----------------------------
 def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
     """
     Estimate of (Shannon/Jaynes) differential entropy
@@ -96,8 +66,8 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     mu: float number or array of size N
        mu = |del x'/del x| is the jacobian of transf. from (x, y,...) -> (x', y', ...)
        If x' = x/sigma_x, y' = y/sigma_y... -> mu = 1/|sigma_x*sigma_y...|
-       It is also the density of states, mu = g(E), or mu = g(E,L), in cases where the DF
-       depends only on energy, or energy and angular momentum
+       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3, in cases where the DF
+       depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively
     k: int value
        kth nearest neighbor
     correct_bias: Boolean
@@ -105,16 +75,10 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     vol_correction: string
        strategy for correction:
        - 'cube': the support is assumed to be a paralelepiped, and the volume around each point is a cube
-       - 'actions': the support is assumed to be the region between two tetrahedra,
-                    as in Fig. 3.25 from Binney & Tremain (2008),
-                    and the volume around each point is still a cube
-       - 'sph': the support is assumed to be a paralelepiped, but the volume around each point is a hyper-sphere,
-                and the hypershpere cap is calculated (S. Li, Asian Journal of Mathematics and Statistics 4(1): 66-70, 2011).
-                This still needs improvements, since the volume of two intersecting caps may be discounted twice.
     l_cube_over_d: float
       side of cube around each point divided by D, the distance to the k-neighbor.
       A typically good choice is a cube inscribed in the sphere, i.e. side/D = 2/sqrt(dim). If None, this is set by default
-    workers: int (default: -1)
+    workers: int (default: -1, meaning using all CPUs available)
        Number of CPUs to be used to parallelize the seacrh for NNs.
 
     Returns
@@ -139,10 +103,10 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     dist_kNN = dist[:,k]
     
     idx = np.where(dist_kNN > 0)[0]
-    N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero,  very small compared to N)
+    N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero, very small compared to N)
     
     if (N_zero_dist > 0):
-        print (N_zero_dist,' points with zero D_NN neglected')
+        print ('tropygal:', N_zero_dist,' points with zero D_NN neglected')
         N = N - N_zero_dist
 
     ln_D = np.log(dist_kNN[idx])
@@ -165,91 +129,19 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
                 xmax = max(data[:, j])
                 xmin = min(data[:, j])
 
-                dx_max_over_l_cube = (xmax - data[:, j]) / l_cube # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
-                dx_min_over_l_cube = (data[:, j] - xmin) / l_cube # we only need to correct if this is < 1
+                dx_max_over_l_cube = (xmax - data[:, j]) / l_cube # we only need to correct if this is < 1/2, i.e. if the volume of the cube goes beyond support
+                dx_min_over_l_cube = (data[:, j] - xmin) / l_cube # we only need to correct if this is < 1/2
 
                 needs_correc = dx_max_over_l_cube < 0.5
                 log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
 
                 needs_correc = dx_min_over_l_cube < 0.5
                 log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
-            correction = np.mean(log_frac_vol)
-        elif (vol_correction=='actions'):
-            if (dim != 3):
-                raise ValueError("tropygal: bias correction using the 'actions' support requires three actions")
-            # need to be sure about order of actions: [Jr, Jz, Jphi].
-            if l_cube_over_d is None:
-                l_cube_over_d = 2/np.sqrt(dim)
-            
-            l_cube = l_cube_over_d * dist_kNN
-            # define coordinates projected onto the normal to the planes z_phi, phi_r, A and B
-            # The last two are the inclined planes on the action tetrahedron (see BT fig. 3.25)
-
-            min_Jr   = min(data[:, 0]); max_Jr   = max(data[:, 0]); delta_Jr = max_Jr - min_Jr
-            min_Jz   = min(data[:, 1]); max_Jz   = max(data[:, 1]); delta_Jz = max_Jz - min_Jz
-            min_Jphi = min(data[:, 2]); max_Jphi = max(data[:, 2])
-
-            min_Jphi_delta_Jz = min_Jphi * delta_Jz
-            min_Jphi_delta_Jr = min_Jphi * delta_Jr
-
-            max_Jphi_delta_Jz = max_Jphi * delta_Jz
-            max_Jphi_delta_Jr = max_Jphi * delta_Jr
-            
-            delta_Jr_delta_Jz = delta_Jr * delta_Jz
-            
-            normal_A = np.array([-min_Jphi_delta_Jz, -min_Jphi_delta_Jr, -delta_Jr_delta_Jz]/np.sqrt(min_Jphi_delta_Jz**2 + min_Jphi_delta_Jr**2 + delta_Jr_delta_Jz**2 ))
-            normal_B = np.array([max_Jphi_delta_Jz, max_Jphi_delta_Jr, delta_Jr_delta_Jz]/np.sqrt(max_Jphi_delta_Jz**2 + max_Jphi_delta_Jr**2 + delta_Jr_delta_Jz**2 ))
-
-            proj_data = np.zeros((N, 2))
-            proj_data[:, 0] = np.dot(data, normal_A) # component along normal to inclined plane A
-            proj_data[:, 1] = np.dot(data, normal_B) # component along normal to inclined plane B
-
-            # For Jr:
-            dx_max_over_l_cube = (data[:, 0] - min_Jr) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
-            needs_correc = dx_max_over_l_cube < 0.5
-            log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-            # For Jz:
-            dx_max_over_l_cube = (data[:, 1] - min_Jz) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
-            needs_correc = dx_max_over_l_cube < 0.5
-            log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-
-            # For planes A and B:
-            for j in range(2):
-                xmax = max(proj_data[:, j])
-                dx_max_over_l_cube = (xmax - proj_data[:, j]) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
-                needs_correc = dx_max_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-
-                # The correction for the min values is only present for the inclined planes A and B
-                # (which can have internal and external planes, as shown in BT fig. 3.25)
-                xmin = min(proj_data[:, j])
-                dx_min_over_l_cube = (proj_data[:, j] - xmin) / l_cube # we only need to correct if this is < 0.5
-                needs_correc = dx_min_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
-            correction = np.mean(log_frac_vol)
-        elif (vol_correction=='sph'):
-            for j in range(dim):
-                xmax = max(data[:, j])
-                xmin = min(data[:, j])
-
-                dx_max_over_D = (xmax - data[:, j])/dist_kNN # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
-                dx_min_over_D = (data[:, j] - xmin)/dist_kNN # we only need to correct if this is < 1
-
-                needs_correc = dx_max_over_D < 1
-                sin_sq_theta = 1. - dx_max_over_D[needs_correc]**2 
-                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
-
-                needs_correc = dx_min_over_D < 1
-                # theta is half the central angle covering the cap -- see https://en.wikipedia.org/wiki/Spherical_cap
-                # and it is such that cos theta = (xmax - x)/D and so on...
-                sin_sq_theta = 1. - dx_min_over_D[needs_correc]**2 
-                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
             correction = np.mean(log_frac_vol)
         else:
             correction = 0
-            raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube', 'actions' or 'sph'")
+            # raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube', 'actions' or 'sph'")
+            raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube'.")
         return -avg_ln_f + avg_ln_mu + correction
     else:
         return -avg_ln_f + avg_ln_mu
@@ -290,16 +182,10 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
     vol_correction: string
        strategy for correction:
        - 'cube': the support is assumed to be a paralelepiped, and the volume around each point is a cube
-       - 'actions': the support is assumed to be the region between two tetrahedra,
-                    as in Fig. 3.25 from Binney & Tremain (2008),
-                    and the volume around each point is still a cube
-       - 'sph': the support is assumed to be a paralelepiped, but the volume around each point is a hyper-sphere,
-                and the hypershpere cap is calculated (S. Li, Asian Journal of Mathematics and Statistics 4(1): 66-70, 2011).
-                This still needs improvements, since the volume of two intersecting caps may be discounted twice.
     l_cube_over_d: float
       Side of cube around each point divided by D, the distance to the k-neighbor.
       A typically good choice is a cube inscribed in the sphere, i.e. side/D = 2/sqrt(dim). If None, this is set by default
-    workers: int (default: -1)
+    workers: int (default: -1, meaning using all CPUs available)
        Number of CPUs to be used to parallelize the seacrh for NNs.
 
     Returns
@@ -371,83 +257,10 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
                 needs_correc = dx_min_over_l_cube < 0.5
                 log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
             correction = np.mean(log_frac_vol)
-        elif (vol_correction=='actions'):
-            if (dim != 3):
-                raise ValueError("tropygal: bias correction using the 'actions' support requires three actions")
-            # need to be sure about order of actions: [Jr, Jz, Jphi].
-            if l_cube_over_d is None:
-                l_cube_over_d = 2/np.sqrt(dim)
-            l_cube = l_cube_over_d * dist_kNN
-            # define coordinates projected onto the normal to the planes z_phi, phi_r, A and B
-            # The last two are the inclined planes on the action tetrahedron (see BT fig. 3.25)
-            
-            min_Jr   = min(data2[:, 0]); max_Jr   = max(data2[:, 0]); delta_Jr = max_Jr - min_Jr
-            min_Jz   = min(data2[:, 1]); max_Jz   = max(data2[:, 1]); delta_Jz = max_Jz - min_Jz
-            min_Jphi = min(data2[:, 2]); max_Jphi = max(data2[:, 2])
-
-            min_Jphi_delta_Jz = min_Jphi * delta_Jz
-            min_Jphi_delta_Jr = min_Jphi * delta_Jr
-
-            max_Jphi_delta_Jz = max_Jphi * delta_Jz
-            max_Jphi_delta_Jr = max_Jphi * delta_Jr
-            
-            delta_Jr_delta_Jz = delta_Jr * delta_Jz
-            
-            normal_A = np.array([-min_Jphi_delta_Jz, -min_Jphi_delta_Jr, -delta_Jr_delta_Jz]/np.sqrt(min_Jphi_delta_Jz**2 + min_Jphi_delta_Jr**2 + delta_Jr_delta_Jz**2 ))
-            normal_B = np.array([max_Jphi_delta_Jz, max_Jphi_delta_Jr, delta_Jr_delta_Jz]/np.sqrt(max_Jphi_delta_Jz**2 + max_Jphi_delta_Jr**2 + delta_Jr_delta_Jz**2 ))
-
-            proj_data = np.zeros((N, 2))
-            proj_data[:, 0] = np.dot(data1, normal_A) # component along normal to inclined plane A
-            proj_data[:, 1] = np.dot(data1, normal_B) # component along normal to inclined plane B
-
-            # For Jr:
-            dx_max_over_l_cube = (data1[:, 0] - min_Jr) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
-            needs_correc = dx_max_over_l_cube < 0.5
-            log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-            # For Jz:
-            dx_max_over_l_cube = (data1[:, 1] - min_Jz) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
-            needs_correc = dx_max_over_l_cube < 0.5
-            log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-
-            # For planes A and B:
-            for j in range(2):
-                xmax = max(proj_data[:, j])
-                dx_max_over_l_cube = (xmax - proj_data[:, j]) / l_cube # we only need to correct if this is < 0.5, i.e. if the volume of the cube goes beyond support
-                needs_correc = dx_max_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-
-                # The correction for the min values is only present for the inclined planes A and B
-                # (which can have internal and external planes, as shown in BT fig. 3.25)
-                xmin = min(proj_data[:, j])
-                dx_min_over_l_cube = (proj_data[:, j] - xmin) / l_cube # we only need to correct if this is < 0.5
-                needs_correc = dx_min_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
-            correction = np.mean(log_frac_vol)
-
-        elif (vol_correction=='sph'):
-            for j in range(dim):
-                xmax = max(data2[:, j])
-                xmin = min(data2[:, j])
-
-                dx_max_over_D = (xmax - data1[:, j])/dist_kNN # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
-                dx_min_over_D = (data1[:, j] - xmin)/dist_kNN # we only need to correct if this is < 1
-
-                needs_correc = dx_max_over_D < 1
-                sin_sq_theta = 1. - dx_max_over_D[needs_correc]**2 
-                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
-
-                needs_correc = dx_min_over_D < 1
-                # theta is half the central angle covering the cap -- see https://en.wikipedia.org/wiki/Spherical_cap
-                # and it is such that cos theta = (xmax - x)/D and so on...
-                sin_sq_theta = 1. - dx_min_over_D[needs_correc]**2 
-                # The fraction of the volume around particle i inside the domain [xmin, xmax]^d:
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(1. - 0.5*betainc((dim+1)/2., 1./2, sin_sq_theta))
-            correction = np.mean(log_frac_vol)
         else:
             correction = 0
-            raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube', 'actions' or 'sph'")
-
+            # raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube', 'actions' or 'sph'")
+            raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube'.")
         return -avg_ln_f + avg_ln_mu + correction
     else:
         return -avg_ln_f + avg_ln_mu
@@ -511,11 +324,11 @@ def renyi_entropy(data, mu=1, q=2, k=1):
     elif (len(np.shape(data)) == 2):
         dim = np.shape(data)[1]
     else:
-        print ('Array with data should be of form [N, dim]')
+        raise ValueError("tropygal: Array with data should be of form [N, dim].")
         return np.nan
 
     if (q==1):
-        print ('For the Rényi entropy, q needs to be != 1')
+        raise ValueError ('tropygal: For the Rényi entropy, q needs to be != 1')
         return np.nan
     
     N = np.shape(data)[0]
@@ -528,7 +341,7 @@ def renyi_entropy(data, mu=1, q=2, k=1):
     N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero,  very small compared to N)
     
     if (N_zero_dist > 0):
-        print (N_zero_dist,' points with zero D_NN neglected')
+        print ('tropygal:', N_zero_dist,' points with zero D_NN neglected')
         N = N - N_zero_dist
         
     D = dist_kNN[idx]
@@ -576,11 +389,11 @@ def tsallis_entropy(data, mu=1, q=2, k=1):
     elif (len(np.shape(data)) == 2):
         dim = np.shape(data)[1]
     else:
-        print ('Array with data should be of form [N, dim]')
+        raise ValueError("tropygal: Array with data should be of form [N, dim].")
         return np.nan
 
     if (q==1):
-        print ('For the Tsallis entropy, q needs to be != 1')
+        raise ValueError ('tropygal: For the Tsallis entropy, q needs to be != 1.')
         return np.nan
     
     N = np.shape(data)[0]
@@ -593,7 +406,7 @@ def tsallis_entropy(data, mu=1, q=2, k=1):
     N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero,  very small compared to N)
     
     if (N_zero_dist > 0):
-        print (N_zero_dist,' points with zero D_NN neglected')
+        print ('tropygal:', N_zero_dist,' points with zero D_NN neglected')
         N = N - N_zero_dist
         
     D = dist_kNN[idx]
