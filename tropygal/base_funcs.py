@@ -87,8 +87,7 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     
     References
     ----------                                                                                                                            
-    .. [1] N. Leonenko, L. Pronzato, V. Savani,
-    "A class of Rényi information estimators for multidimensional densities." Ann. Statist. 36 (5) 2153 - 2182, 2008
+    .. [1] N. Leonenko, L. Pronzato, V. Savani, "A class of Rényi information estimators for multidimensional densities.", Ann. Statist. 36 (5) 2153 - 2182, 2008
     """
 
     if (len(np.shape(data)) == 1):
