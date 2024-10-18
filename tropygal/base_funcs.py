@@ -79,16 +79,16 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
       A typically good choice is a cube inscribed in the sphere, i.e. side/D = 2/sqrt(dim). If None, this is set by default
     workers: int (default: -1, meaning using all CPUs available)
        Number of CPUs to be used to parallelize the seacrh for NNs.
-
+    
     Returns
     -------
     float
        entropy estimate -<ln(f/mu)> = - (1/N)*sum_i=1^N ln(f_i/mu_i)
-
+    
     References
-    ----------
-    .. [1] A. Mathematician, "x to the p-th power: squares, cubes, and their
-    general form," J. Basic Math., vol. 2, pp. 2-3, 1864.
+    ----------                                                                                                                            
+    .. [1] N. Leonenko, L. Pronzato, V. Savani,
+    "A class of Rényi information estimators for multidimensional densities." Ann. Statist. 36 (5) 2153 - 2182, 2008
     """
 
     if (len(np.shape(data)) == 1):
