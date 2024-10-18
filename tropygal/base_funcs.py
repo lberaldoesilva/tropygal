@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.special import gamma as Gamma
 from scipy.special import psi # digamma function
-#from scipy.special import betainc
 from scipy.spatial import KDTree
 from scipy import integrate
 
@@ -85,6 +84,11 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     -------
     float
        entropy estimate -<ln(f/mu)> = - (1/N)*sum_i=1^N ln(f_i/mu_i)
+
+    References
+    ----------
+    .. [1] A. Mathematician, "x to the p-th power: squares, cubes, and their
+    general form," J. Basic Math., vol. 2, pp. 2-3, 1864.
     """
 
     if (len(np.shape(data)) == 1):
@@ -214,11 +218,6 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
     
     tree = KDTree(data2, leafsize=10) # default leafsize=10
     dist, ind = tree.query(data1, k=k+1, workers=workers) # workers is number of threads. -1 means all threads
-    #dist, ind = tree.query(data1, k=k, workers=-1) # workers is number of threads. -1 means all threads
-    # if (k==1):
-    #     dist_kNN = dist
-    # else:
-    #     dist_kNN = dist[:,k-1] # changed here too in respect to entropy
     dist_kNN = dist[:,k]
     
     idx = np.where(dist_kNN > 0)[0]
