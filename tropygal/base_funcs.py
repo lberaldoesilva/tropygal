@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import gamma as Gamma
 from scipy.special import psi # digamma function
-from scipy.special import betainc
+#from scipy.special import betainc
 from scipy.spatial import KDTree
 from scipy import integrate
 
