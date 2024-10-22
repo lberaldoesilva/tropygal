@@ -4,7 +4,7 @@ too. It also provides functions for analytical distribution functions
 and density of states for models that have analytical
 expressions.
 
-Read the docs [here](https://tropygal.readthedocs.io/en/stable/).
+Read the docs [here](https://tropygal.readthedocs.io/en/latest/).
 
 Detailed expressions and numerical tests can be found in [Beraldo e
 Silva et al
