@@ -1,5 +1,4 @@
 import numpy as np
-import agama
 
 _G = 4.300831457814024e-06 # kpc Msun^-1 (km/s)2
 
@@ -108,59 +107,61 @@ def gEL_Isochrone(E, L, M, G=_G):
     return 8.*np.pi**2*L*Tr_Isochrone(E, M, G=G)
 
 #------------------------
-def Tr_Spherical(coords, pot):
-    """ The period of radial oscillation for the a generic spherical potential. Current version requires agama
+# def Tr_Spherical(coords, pot):
+#     """ The period of radial oscillation for the a generic spherical potential. Current version requires agama
     
-    Parameters
-    ----------
-    coords: 6D array
-         coordinates of particle
-    pot: potential object
-         total potential
+#     Parameters
+#     ----------
+#     coords: 6D array
+#          coordinates of particle
+#     pot: potential object
+#          total potential
 
-    Returns
-    -------
-    float
-      the period of radial motion
+#     Returns
+#     -------
+#     float
+#       the period of radial motion
 
-    References
-    ----------
-    .. [1] Binney, J., & Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press
-    """
-    actF = agama.ActionFinder(pot)
-    Omega = actF(coords, actions=False, frequencies=True, angles=False)
+#     References
+#     ----------
+#     .. [1] Binney, J., & Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press
+#     """
+#     import agama
+#     actF = agama.ActionFinder(pot)
+#     Omega = actF(coords, actions=False, frequencies=True, angles=False)
 
-    Om_r = Omega[:,0]
-    return (2.*np.pi)/Om_r
+#     Om_r = Omega[:,0]
+#     return (2.*np.pi)/Om_r
 
-def gEL_Spherical(coords, pot):
-    """ The density of states assuming a DF that depends on energy and angular momentum, in a generic spherical potential. Current version requires agama
+# def gEL_Spherical(coords, pot):
+#     """ The density of states assuming a DF that depends on energy and angular momentum, in a generic spherical potential. Current version requires agama
     
-    Parameters
-    ----------
-    coords: 6D array
-         coordinates of particle
-    pot: potential object
-         total potential
+#     Parameters
+#     ----------
+#     coords: 6D array
+#          coordinates of particle
+#     pot: potential object
+#          total potential
 
-    Returns
-    -------
-    float
-      the density of states
+#     Returns
+#     -------
+#     float
+#       the density of states
 
-    References
-    ----------
-    .. [1] Binney, J., & Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press
-    """
-    x = coords[:,0]
-    y = coords[:,1]
-    z = coords[:,2]
-    vx = coords[:,3]
-    vy = coords[:,4]
-    vz = coords[:,5]
-    Lx = Lx = (y*vz - z*vy)
-    Ly = (z*vx - x*vz)
-    Lz = (x*vy - y*vx)
-    L = np.sqrt(Lx**2 + Ly**2 + Lz**2)
+#     References
+#     ----------
+#     .. [1] Binney, J., & Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press
+#     """
+#     import agama
+#     x = coords[:,0]
+#     y = coords[:,1]
+#     z = coords[:,2]
+#     vx = coords[:,3]
+#     vy = coords[:,4]
+#     vz = coords[:,5]
+#     Lx = Lx = (y*vz - z*vy)
+#     Ly = (z*vx - x*vz)
+#     Lz = (x*vy - y*vx)
+#     L = np.sqrt(Lx**2 + Ly**2 + Lz**2)
     
-    return 8.*np.pi**2*L*Tr_Spherical(coords, pot)
+#     return 8.*np.pi**2*L*Tr_Spherical(coords, pot)

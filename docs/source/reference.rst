@@ -23,7 +23,3 @@ API reference
 .. autofunction:: tropygal.Tr_Isochrone
 
 .. autofunction:: tropygal.gEL_Isochrone
-
-.. autofunction:: tropygal.Tr_Spherical
-
-.. autofunction:: tropygal.gEL_Spherical

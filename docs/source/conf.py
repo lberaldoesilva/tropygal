@@ -16,6 +16,9 @@ release = '0.1.0'
 
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx.ext.viewcode", "nbsphinx"]
 
+nbsphinx_prolog = ""
+nbsphinx_epilog = ""
+
 templates_path = ['_templates']
 exclude_patterns = []
 

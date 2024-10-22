@@ -42,11 +42,11 @@ def V_d(dim):
 def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
     """
     Estimate of (Shannon/Jaynes) differential entropy
-    S = - int f ln (f/mu) d^dim x
-    The factor mu ensures that f/mu is dimensionless and 
-    that S is invariant for changes of variable x -> x', in which case mu = |del x' / del x|
+    S = - int f ln (f/mu) d^dim x.
+    
+    The factor mu ensures that f/mu is dimensionless.
+    It also stores the density of states if the DF is a function of integrals only.
     For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.
-    So, if x and f are dimensionless and x is order unit, we can set mu = 1.
 
     S is estimated as (1/N) * sum_i=1^N ln(f_i),
     where f_i is the estimate of the DF f around point/particle/star i
@@ -63,10 +63,10 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     data: array [N, dim]
        Data points
     mu: float number or array of size N
-       mu = |del x'/del x| is the jacobian of transf. from (x, y,...) -> (x', y', ...)
-       If x' = x/sigma_x, y' = y/sigma_y... -> mu = 1/|sigma_x*sigma_y...|
-       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3, in cases where the DF
-       depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively
+       It ensures the argument of ln() is dimensionless.
+       If x -> = x/sigma_x, y -> y/sigma_y... -> mu = 1/(sigma_x*sigma_y...).
+       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3,
+       in cases where the DF depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.
     k: int value
        kth nearest neighbor
     correct_bias: Boolean
@@ -151,23 +151,20 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
 #-----------------------------
 def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
     """
-    Estimate of the cross entropy
-    H = - int f0 ln (f/mu) d^dim x
-    The factor mu ensures that f/mu is dimensionless and 
-    that H is invariant for changes of variable x -> x', in which case mu = |del x' / del x|
+    Estimate of the cross entropy H = - int f0 ln (f/mu) d^dim x.
+    The factor mu ensures that f/mu is dimensionless and
+    it also stores the density of states if the DF is a function of integrals only.
     For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.
-    So, if x and f are dimensionless and x is order unit, we can define mu = 1.
-
     H is estimated as (1/N) * sum_i=1^N ln(f_i),
-    where f_i is the estimate of the DF f based on the dist. of point i in sample 1 to its kth neighbor in sample 2
+    where f_i is the estimate of the DF f based on the dist. of point i in sample 1 to its kth neighbor in sample 2.
     For NN (Nerest Neighbor) method:
     From e.g. Eq. (11) in Leonenko, Pronzato, Savani (2008):
     f_i = 1/[ M * exp(-psi(k)) * V_d * D^d ], where:
-    N is size of sample 1
-    M is size of sample 2
-    psi is the digamma function
-    V_d is the volume of unitary hypersphere in d-dimensions
-    D is the Euclidean distance of particle i in sample 1 to its kth neighbor in sample 2
+    N is size of sample 1,
+    M is size of sample 2,
+    psi is the digamma function,
+    V_d is the volume of unitary hypersphere in d-dimensions,
+    D is the Euclidean distance of particle i in sample 1 to its kth neighbor in sample 2.
 
     Parameters
     ----------
@@ -176,8 +173,10 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
     data2: array [M, dim]
        Data points of sample 2
     mu: float number or array of size N
-       mu = |del x'/del x| is the jacobian of transf. from (x, y,...) -> (x', y', ...)
-       If x' = x/sigma_x, y' = y/sigma_y... -> mu = 1/|sigma_x*sigma_y...|
+       It ensures the argument of ln() is dimensionless.
+       If x -> = x/sigma_x, y -> y/sigma_y... -> mu = 1/(sigma_x*sigma_y...).
+       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3,
+       in cases where the DF depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.
     k: int value
        kth nearest neighbor
     correct_bias: Boolean
@@ -188,7 +187,7 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
     l_cube_over_d: float
       Side of cube around each point divided by D, the distance to the k-neighbor.
       A typically good choice is a cube inscribed in the sphere, i.e. side/D = 2/sqrt(dim). If None, this is set by default
-    workers: int (default: -1, meaning using all CPUs available)
+    workers: int (default: -1, meaning using all CPUs available).
        Number of CPUs to be used to parallelize the seacrh for NNs.
 
     Returns
@@ -285,11 +284,8 @@ def C_k(q, k=1):
 def renyi_entropy(data, mu=1, q=2, k=1):
     """
     Estimate of Rényi entropy
-    S_q = [1/(1 - q)] ln int f (f/mu)^(q-1) d^dim x, for q != 1
-    The factor mu ensures that f/mu is dimensionless and 
-    that S_q is invariant for changes of variable x -> x', in which case mu = |del x' / del x|
-    For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.
-    So, if x and f are dimensionless and x is order unit, we can set mu = 1.
+    S_q = [1/(1 - q)] ln int f (f/mu)^(q-1) d^dim x, for q != 1.
+    The factor mu ensures that f/mu is dimensionless.
 
     S_q is estimated as [1/(1-q)] ln (1/N) * sum_i=1^N (f_i/mu_i)^(q-1),
     where f_i is the estimate of the DF f around point/particle/star i
@@ -303,8 +299,10 @@ def renyi_entropy(data, mu=1, q=2, k=1):
     data: array [N, dim]
        Data points
     mu: float number or array of size N
-       mu = |del x'/del x| is the jacobian of transf. from (x, y,...) -> (x', y', ...)
-       If x' = x/sigma_x, y' = y/sigma_y... -> mu = 1/|sigma_x*sigma_y...|
+       It ensures the argument of ln() is dimensionless.
+       If x' = x/sigma_x, y' = y/sigma_y... -> mu = 1/(sigma_x*sigma_y...).
+       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3, in cases where the DF
+       depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.
     q: float value
        q-parameter of the entropy; needs to be q != 1
     k: int value
@@ -350,11 +348,8 @@ def renyi_entropy(data, mu=1, q=2, k=1):
 def tsallis_entropy(data, mu=1, q=2, k=1):
     """
     Estimate of Tsallis entropy
-    S_q = [1/(q - 1)][ 1 - int f (f/mu)^(q-1) d^dim x ], for q != 1
-    The factor mu ensures that f/mu is dimensionless and 
-    that S is invariant for changes of variable x -> x', in which case mu = |del x' / del x|
-    For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.
-    So, if x and f are dimensionless and x is order unit, we can set mu = 1.
+    S_q = [1/(q - 1)][ 1 - int f (f/mu)^(q-1) d^dim x ], for q != 1.
+    The factor mu ensures that f/mu is dimensionless.
 
     S_q is estimated as [1/(q - 1)] [ 1 - (1/N) * sum_i=1^N (f_i/mu_i)^(q-1) ],
     where f_i is the estimate of the DF f around point/particle/star i
@@ -368,8 +363,10 @@ def tsallis_entropy(data, mu=1, q=2, k=1):
     data: array [N, dim]
        Data points
     mu: float number or array of size N
-       mu = |del x'/del x| is the jacobian of transf. from (x, y,...) -> (x', y', ...)
-       If x' = x/sigma_x, y' = y/sigma_y... -> mu = 1/|sigma_x*sigma_y...|
+       It ensures the argument of ln() is dimensionless.
+       If x -> = x/sigma_x, y -> y/sigma_y... -> mu = 1/(sigma_x*sigma_y...).
+       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3,
+       in cases where the DF depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.
     q: int value
        q-parameter of the entropy; needs to be q != 1
     k: int value

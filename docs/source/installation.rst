@@ -4,10 +4,7 @@ Installation
 Dependencies
 ------------
 
-:math:`\texttt{tropygal}` only requires `numpy <https://numpy.org/>`__ and `scipy <https://scipy.org/>`__ for the main entropy
-estimators. To the specific task of estimating the density of
-states for a DF depending on energy and angular momentum, it
-currently requires `Agama <https://github.com/GalacticDynamics-Oxford/Agama>`__.
+:math:`\texttt{tropygal}` only requires `numpy <https://numpy.org/>`__ and `scipy <https://scipy.org/>`__.
 
 Installing
 ----------
