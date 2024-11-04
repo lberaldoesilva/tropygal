@@ -57,7 +57,6 @@ def g_Isochrone(E, M, b, G=_G_gal):
     """
     e = -b*E/(G*M)
     return (2.*np.pi)**3*np.sqrt(G*M)*b**2.5*(1-2*e)**2/(2*e)**2.5
-
 #------------------------
 def Tr_Isochrone(E, M, G=_G_gal):
     """ The period of radial oscillation for the isochrone model
@@ -81,7 +80,7 @@ def Tr_Isochrone(E, M, G=_G_gal):
     .. [1] Binney, J., & Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press
     """
     return (2.*np.pi)*M*G/(-2*E)**1.5
-
+#-----------------------------
 def gEL_Isochrone(E, L, M, G=_G_gal):
     """ The density of states for the isochrone model, but assuming (generically) a DF that depends on energy and angular momentum
 
@@ -106,7 +105,6 @@ def gEL_Isochrone(E, L, M, G=_G_gal):
     .. [1] Binney, J., & Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press
     """
     return 8.*np.pi**2*L*Tr_Isochrone(E, M, G=G)
-
 #-----------------------------
 def DF_Hernquist(E, M, b, G=_G_gal):
     """ Distribution Function (DF) of Hernquist model - see Hernquist (1990)
@@ -193,7 +191,7 @@ def g_Hernquist(E, M, b, G=_G_gal):
 
 #     Om_r = Omega[:,0]
 #     return (2.*np.pi)/Om_r
-
+#-----------------------------
 def gEL_Spherical(E, L, Phi, dPhi_dr, params):
     """ The density of states assuming a DF that depends on energy and angular momentum, in a generic spherical potential. It requires a function calculating the potential Phi and another calculating its derivative
     

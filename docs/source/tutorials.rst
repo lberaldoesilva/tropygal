@@ -6,3 +6,4 @@ Tutorials
    :caption: Contents:
 
    tutorial_isochrone.ipynb
+   tutorial_Hernquist.ipynb

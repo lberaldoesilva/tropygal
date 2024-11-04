@@ -3,7 +3,6 @@ import scipy
 
 from .constants import _G_gal
 
-
 #----------------
 def find_Phi_eff_min(L, dPhi_dr, params, range_0=(1e-3, 1e+3), max_range=1e+8):
     """ Find the location of the minimum of the effective potential.
