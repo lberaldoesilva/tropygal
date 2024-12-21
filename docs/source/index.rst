@@ -12,7 +12,5 @@ Welcome tropygal's documentation
 
    Installation <installation.rst>
    intro.rst
-   API reference <reference.rst>
    Tutorials <tutorials.rst>
-      
-      
+   API reference <reference.rst>
