@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     
 setuptools.setup(
     name="tropygal",
-    version="0.1",
+    version="0.1.1",
     author="Leandro Beraldo e Silva",
     author_email="lberaldoesilva@gmail.com",
     description="Entropy estimators for galactic dynamics",
