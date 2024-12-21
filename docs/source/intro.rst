@@ -18,7 +18,7 @@ Main expressions
 
 A convenient entropy definition is [#f1]_
 
-.. math:: S \equiv - \int f(\vec{w}) \ln \left(\frac{f}{\mu}\right)
+.. math:: S[f] \equiv - \int f(\vec{w}) \ln \left(\frac{f}{\mu}\right)
       \mathrm{d}^d\vec{w}
       :label: eq_S_def
 
@@ -88,7 +88,7 @@ differential entropy as more commonly defined, i.e. :math:`- \int f
 \ln f \mathrm{d}^6\vec{w}`. From Eq. :eq:`eq_S_def_2` and using Eq.
 :eq:`eq_norm`, we have:
 
-.. math:: - \int f(\vec{w}) \ln f \mathrm{d}^6\vec{w} = \hat{S} + \ln |\Sigma|.
+.. math:: - \int f(\vec{w}) \ln f \mathrm{d}^6\vec{w} \simeq \hat{S} + \ln |\Sigma|.
 
 
 Code usage
