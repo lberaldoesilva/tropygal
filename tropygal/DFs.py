@@ -136,7 +136,7 @@ def DF_Hernquist(E, M, b, G=_G_gal):
              ( (1-2.*e)*(8.*e**2 - 8.*e -3) + 3.*np.arcsin(np.sqrt(e))/np.sqrt(e*(1.-e)) ) )
 #------------------------
 def g_Hernquist(E, M, b, G=_G_gal):
-    """ The density of states for the isochrone model
+    """ The density of states for the Hernquist model
     
     Parameters
     ----------
