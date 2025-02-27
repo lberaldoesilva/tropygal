@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Introduction &#8212; tropygal 0.1.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=87629129" />
+    <script src="_static/documentation_options.js?v=a58bc63e"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorials" href="tutorials.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tutorials.html" title="Tutorials"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Introduction</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h1>
+<p><span class="math notranslate nohighlight">\(\texttt{tropygal}\)</span> is a pure-python package for estimating the
+<a class="reference external" href="https://en.wikipedia.org/wiki/Differential_entropy">differential entropy</a>
+of a probability distribution function (pdf) <span class="math notranslate nohighlight">\(f(\vec{w})\)</span> in
+<span class="math notranslate nohighlight">\(d\)</span>-dimensions, in the context of galactic dynamics.
+The entropy is estimated with a Monte Carlo method,
+i.e. using a sample of the underlying pdf,
+without assuming any specific form for <span class="math notranslate nohighlight">\(f(\vec{w})\)</span>.
+The same estimators can also be used very broadly in other contexts.
+Detailed expressions and numerical tests can be found in <a class="reference external" href="https://arxiv.org/abs/2407.07947">Beraldo e Silva et al (2024)</a>. Please cite this paper if you
+use <span class="math notranslate nohighlight">\(\texttt{tropygal}\)</span>.</p>
+<section id="main-expressions">
+<h2>Main expressions<a class="headerlink" href="#main-expressions" title="Link to this heading">¶</a></h2>
+<p>A convenient entropy definition is <a class="footnote-reference brackets" href="#f1" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p>
+<div class="math notranslate nohighlight" id="equation-eq-s-def">
+<span class="eqno">(1)<a class="headerlink" href="#equation-eq-s-def" title="Link to this equation">¶</a></span>\[S[f] \equiv - \int f(\vec{w}) \ln \left(\frac{f}{\mu}\right)
+\mathrm{d}^d\vec{w}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mu\)</span> makes the argument of <span class="math notranslate nohighlight">\(\ln()\)</span> dimensionless,
+and the pdf is assumed to be normalized such that</p>
+<div class="math notranslate nohighlight" id="equation-eq-norm">
+<span class="eqno">(2)<a class="headerlink" href="#equation-eq-norm" title="Link to this equation">¶</a></span>\[\int f(\vec{w}) \mathrm{d}^d\vec{w} = 1.\]</div>
+<p>Given a size-<span class="math notranslate nohighlight">\(N\)</span> sample of
+<span class="math notranslate nohighlight">\(f(\vec{w})\)</span>, the entropy is estimated as</p>
+<div class="math notranslate nohighlight">
+\[\hat{S} = - \frac{1}{N}\sum_i^N \ln \left( \frac{\hat{f}_i}{\mu_i} \right),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{f}_i\)</span> is the estimate of <span class="math notranslate nohighlight">\(f(\vec{w})\)</span> at
+point/particle/star <span class="math notranslate nohighlight">\(i\)</span>. In principle, any density estimate
+method can be used for <span class="math notranslate nohighlight">\(\hat{f}_i\)</span>, but certain methods are
+ideal to precisely estimate the entropy - see e.g. <a class="reference external" href="https://rdcu.be/dXemG">Hall &amp;
+Morton (1993)</a>, <a class="reference external" href="http://jimbeck.caltech.edu/summerlectures/references/Entropy%20estimation.pdf">Beirlant et al (2001)</a>.</p>
+<p><span class="math notranslate nohighlight">\(\texttt{tropygal}\)</span> currently implements the <span class="math notranslate nohighlight">\(k\)</span>-th Nearest Neighbor (kNN)
+estimator, as detailed in e.g. <a class="reference external" href="https://projecteuclid.org/journals/annals-of-statistics/volume-36/issue-5/A-class-of-R%c3%a9nyi-information-estimators-for-multidimensional-densities/10.1214/07-AOS539.full">Leonenko, Pronzato &amp; Savani (2008)</a>,
+<a class="reference external" href="https://link.springer.com/book/10.1007/978-3-319-25388-6">Biau &amp; Devroye (2015)</a>. It also
+optionally implememnts a simple correction for the bias in the
+estimates, as proposed by <a class="reference external" href="https://www.mdpi.com/1099-4300/18/1/13">Charzynska &amp; Gambin (2015)</a>.</p>
+<p>Typically in galactic dynamics, <span class="math notranslate nohighlight">\(d=6\)</span> and
+<span class="math notranslate nohighlight">\(\vec{w}=(\vec{r}, \vec{v})\)</span> are the phase-space coordinates
+(and we simply refer to <span class="math notranslate nohighlight">\(f(\vec{w})\)</span> as the DF). The quantity
+<span class="math notranslate nohighlight">\(\mu\)</span> in Eq. <a class="reference internal" href="#equation-eq-s-def">(1)</a> can also accommodate densities of
+states in applications where the DF depends only on integrals of
+motion (as implied by the Jeans’ theorem for stationary samples).</p>
+</section>
+<section id="change-to-normalized-coordinates">
+<h2>Change to normalized coordinates<a class="headerlink" href="#change-to-normalized-coordinates" title="Link to this heading">¶</a></h2>
+<p>Note that <span class="math notranslate nohighlight">\(\vec{w}\)</span> involves coordinates of possibly different
+units and very dissimilar magnitudes (e.g. positions and
+velocities). To estimate the entropy, we calculate (Euclidean)
+distances between sample points, so it’s useful to change variables to
+coordinates normalized by the respective dispersions, <span class="math notranslate nohighlight">\(x' =
+x/\sigma_x, y' = y/\sigma_y, z' = z/\sigma_z\)</span> and so on, allowing a
+proper distance definition.</p>
+<p>The DF of the new coordinates <span class="math notranslate nohighlight">\(\vec{w}' =(\vec{r}', \vec{v}')\)</span>
+is <span class="math notranslate nohighlight">\(f'(\vec{w}') = |\Sigma|f(\vec{w})\)</span>, where
+<span class="math notranslate nohighlight">\(|\Sigma|=\sigma_x\cdot\sigma_y\dots\sigma_{v_z}\)</span>. Setting
+<span class="math notranslate nohighlight">\(\mu=|\Sigma|^{-1}\)</span> in Eq. <a class="reference internal" href="#equation-eq-s-def">(1)</a>, the entropy reduces
+to</p>
+<div class="math notranslate nohighlight" id="equation-eq-s-def-2">
+<span class="eqno">(3)<a class="headerlink" href="#equation-eq-s-def-2" title="Link to this equation">¶</a></span>\[S = - \int f(\vec{w}) \ln (|\Sigma|f) \mathrm{d}^6\vec{w} = - \int f'(\vec{w}') \ln f' \mathrm{d}^6\vec{w}',\]</div>
+<p>and can be better estimated from the sample with normalized coordinates as</p>
+<div class="math notranslate nohighlight">
+\[\hat{S} = - \frac{1}{N}\sum_i^N \ln \hat{f}_i',\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{f}_i'\)</span> is the estimate of <span class="math notranslate nohighlight">\(f'(\vec{w}')\)</span> at
+point/particle/star <span class="math notranslate nohighlight">\(i\)</span>. After estimating <span class="math notranslate nohighlight">\(S\)</span> using the
+normalized coordinates, one might be interested in obtaining the
+differential entropy as more commonly defined, i.e. <span class="math notranslate nohighlight">\(- \int f
+\ln f \mathrm{d}^6\vec{w}\)</span>. From Eq. <a class="reference internal" href="#equation-eq-s-def-2">(3)</a> and using Eq.
+<a class="reference internal" href="#equation-eq-norm">(2)</a>, we have:</p>
+<div class="math notranslate nohighlight">
+\[- \int f(\vec{w}) \ln f \mathrm{d}^6\vec{w} \simeq \hat{S} + \ln |\Sigma|.\]</div>
+</section>
+<section id="code-usage">
+<h2>Code usage<a class="headerlink" href="#code-usage" title="Link to this heading">¶</a></h2>
+<p>For a simple usage, let’s start importing the relevant modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tropygal</span>
+</pre></div>
+</div>
+<p>Assume we have a sample of 6D coordinates <span class="math notranslate nohighlight">\(\vec{w}=(x, y, z,
+v_x, v_y,v_z)\)</span> for <span class="math notranslate nohighlight">\(N\)</span> particles at a given time, so each of
+these is an array of size <span class="math notranslate nohighlight">\(N\)</span>. As discussed above, it’s useful
+to change variables to coordinates normalized by the respective
+dispersions, <span class="math notranslate nohighlight">\(x' = x/\sigma_x, y' = y/\sigma_y, z' = z/\sigma_z\)</span>
+and so on:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">vx</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">vz</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Sigma is an array storing the typical dispersion of each of the 6D
+coordinates - instead of standard deviations, we use percentiles,
+which are more robust against outliers and are finite for any pdf.</p>
+<p>The entropy is estimated as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">S</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">data</span><span class="o">/</span><span class="n">Sigma</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Explicitly setting the optional arguments to their standard values:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">S</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">data</span><span class="o">/</span><span class="n">Sigma</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">correct_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">vol_correction</span><span class="o">=</span><span class="s1">&#39;cube&#39;</span><span class="p">,</span> <span class="n">l_cube_over_d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">workers</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the last line, ‘k’ is the used neighbor (the k in kNN),
+‘correct_bias’ sets whether the estimate should be corrected for the
+bias as proposed by <a class="reference external" href="https://www.mdpi.com/1099-4300/18/1/13">Charzynska &amp; Gambin (2015)</a>, ‘vol_correction’
+specifies details about the assumed support and the volume shape
+around each point (currently only accepst ‘cube’), ‘l_cube_over_d’ is
+the side of the cube around each point <span class="math notranslate nohighlight">\(i\)</span> divided by the
+distance <span class="math notranslate nohighlight">\(D_{ik}\)</span> to its k-th neighbor - the standard is the
+diagonal of the cube inscribed to the sphere of radius <span class="math notranslate nohighlight">\(D_{ik}\)</span>,
+i.e. <span class="math notranslate nohighlight">\(l_i = (2/\sqrt{d})D_{ik}\)</span>, and finally ‘workers’ is the
+number of CPUs to be used in the nearest neighbor identification (-1
+means all available).</p>
+<p>Note that larger values for ‘k’ typically introduce larger biases and
+smaller fluctuations in the entropy estimate. The bias correction
+proposed by <a class="reference external" href="https://www.mdpi.com/1099-4300/18/1/13">Charzynska &amp; Gambin (2015)</a> seems to suppress the bias
+without introducing extra noise - see also Fig. 5 in <a class="reference external" href="https://arxiv.org/abs/2407.07947">Beraldo e Silva
+et al (2024)</a>.</p>
+<p>See the tutorials for more complete examples.</p>
+<p class="rubric">Footnotes</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="f1" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>See specifically <a class="reference external" href="https://en.wikipedia.org/wiki/Differential_entropy#Variants">https://en.wikipedia.org/wiki/Differential_entropy#Variants</a>.</p>
+</aside>
+</aside>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Introduction</a><ul>
+<li><a class="reference internal" href="#main-expressions">Main expressions</a></li>
+<li><a class="reference internal" href="#change-to-normalized-coordinates">Change to normalized coordinates</a></li>
+<li><a class="reference internal" href="#code-usage">Code usage</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="installation.html"
+                          title="previous chapter">Installation</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="tutorials.html"
+                          title="next chapter">Tutorials</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/intro.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tutorials.html" title="Tutorials"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Introduction</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Leandro Beraldo e Silva.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

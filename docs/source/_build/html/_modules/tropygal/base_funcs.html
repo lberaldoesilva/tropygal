@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tropygal.base_funcs &#8212; tropygal 0.1.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinxdoc.css?v=87629129" />
+    <script src="../../_static/documentation_options.js?v=a58bc63e"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">tropygal.base_funcs</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tropygal.base_funcs</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">gamma</span> <span class="k">as</span> <span class="n">Gamma</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">psi</span> <span class="c1"># digamma function</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">KDTree</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">integrate</span>
+
+<span class="c1">#pi2 = np.pi**2.</span>
+<span class="c1">#-----------------</span>
+<div class="viewcode-block" id="V_d">
+<a class="viewcode-back" href="../../reference.html#tropygal.V_d">[docs]</a>
+<span class="k">def</span> <span class="nf">V_d</span><span class="p">(</span><span class="n">dim</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Volume of (unit-radius) hyper-sphere of dimension d</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dim: int</span>
+<span class="sd">         dimension</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float number</span>
+<span class="sd">      the volume [pi^(dim/2.)]/Gamma(dim/2. + 1)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Particular cases (for performance):</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">dim</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">2.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">dim</span><span class="o">==</span><span class="mi">2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">dim</span><span class="o">==</span><span class="mi">3</span><span class="p">):</span>
+        <span class="c1"># return 4.*np.pi/3.</span>
+        <span class="k">return</span> <span class="mf">4.18879020478639</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">dim</span><span class="o">==</span><span class="mi">4</span><span class="p">):</span>
+        <span class="c1"># return pi2/2.</span>
+        <span class="k">return</span> <span class="mf">4.93480220054468</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">dim</span><span class="o">==</span><span class="mi">5</span><span class="p">):</span>
+        <span class="c1"># return 8.*pi2/15.</span>
+        <span class="k">return</span> <span class="mf">5.26378901391432</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">dim</span><span class="o">==</span><span class="mi">6</span><span class="p">):</span>
+        <span class="c1"># return pi2*np.pi/6.</span>
+        <span class="k">return</span> <span class="mf">5.16771278004997</span> <span class="c1"># From here, V_d starts decreasing with d (the curse of dimensionality)</span>
+    
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="p">(</span><span class="n">dim</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">/</span><span class="n">Gamma</span><span class="p">(</span><span class="n">dim</span><span class="o">/</span><span class="mf">2.</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span></div>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="entropy">
+<a class="viewcode-back" href="../../reference.html#tropygal.entropy">[docs]</a>
+<span class="k">def</span> <span class="nf">entropy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">correct_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">vol_correction</span><span class="o">=</span><span class="s1">&#39;cube&#39;</span><span class="p">,</span> <span class="n">l_cube_over_d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">workers</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate of (Shannon/Jaynes) differential entropy</span>
+<span class="sd">    S = - int f ln (f/mu) d^dim x.</span>
+<span class="sd">    </span>
+<span class="sd">    The factor mu ensures that f/mu is dimensionless.</span>
+<span class="sd">    It also stores the density of states if the DF is a function of integrals only.</span>
+<span class="sd">    For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.</span>
+
+<span class="sd">    S is estimated as (1/N) * sum_i=1^N ln(f_i),</span>
+<span class="sd">    where f_i is the estimate of the DF f around point/particle/star i</span>
+<span class="sd">    For NN (Nerest Neighbor) method:</span>
+<span class="sd">    From e.g. Eq. (10) in Leonenko, Pronzato, Savani (2008):</span>
+<span class="sd">    f_i = 1/[ (N-1) * exp(-psi(k)) * V_d * D^d ], where:</span>
+<span class="sd">    N is sample size</span>
+<span class="sd">    psi is the digamma function</span>
+<span class="sd">    V_d is the volume of unitary hypersphere in d-dimensions</span>
+<span class="sd">    D is the Euclidean distance to kth neighbor</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: array [N, dim]</span>
+<span class="sd">       Data points</span>
+<span class="sd">    mu: float number or array of size N</span>
+<span class="sd">       It ensures the argument of ln() is dimensionless.</span>
+<span class="sd">       If x -&gt; = x/sigma_x, y -&gt; y/sigma_y... -&gt; mu = 1/(sigma_x*sigma_y...).</span>
+<span class="sd">       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3,</span>
+<span class="sd">       in cases where the DF depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.</span>
+<span class="sd">    k: int value</span>
+<span class="sd">       kth nearest neighbor</span>
+<span class="sd">    correct_bias: Boolean</span>
+<span class="sd">       If correct for bias due to boundary effects as proposed by Charzynska &amp; Gambin 2015</span>
+<span class="sd">    vol_correction: string</span>
+<span class="sd">       strategy for correction:</span>
+<span class="sd">       - &#39;cube&#39;: the support is assumed to be a paralelepiped, and the volume around each point is a cube</span>
+<span class="sd">    l_cube_over_d: float</span>
+<span class="sd">      side of cube around each point divided by D, the distance to the k-neighbor.</span>
+<span class="sd">      A typically good choice is a cube inscribed in the sphere, i.e. side/D = 2/sqrt(dim). If None, this is set by default</span>
+<span class="sd">    workers: int (default: -1, meaning using all CPUs available)</span>
+<span class="sd">       Number of CPUs to be used to parallelize the seacrh for NNs.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">       entropy estimate -&lt;ln(f/mu)&gt; = - (1/N)*sum_i=1^N ln(f_i/mu_i)</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------                                                                                                                            </span>
+<span class="sd">    .. [1] N. Leonenko, L. Pronzato, V. Savani, &quot;A class of Rényi information estimators for multidimensional densities.&quot;, Ann. Statist. 36 (5) 2153 - 2182, 2008</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tropygal: Array with data should be of form [N, dim]&#39;</span><span class="p">)</span>
+    
+    <span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">leafsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># default leafsize=10</span>
+    
+    <span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span> <span class="c1"># workers is number of threads. -1 means all threads; k+1 because the first is the particle itself</span>
+
+    <span class="c1"># Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).</span>
+    <span class="c1"># In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN &gt;0</span>
+
+    <span class="n">dist_kNN</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[:,</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">idx_to_fix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dist_kNN</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)</span>
+        <span class="c1">#print (&#39;tropygal:&#39;, len(idx_to_fix),&#39; points with zero D_NN. Taking next neighbors until D_NN&gt;0...&#39;)</span>
+        <span class="c1"># For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.</span>
+        <span class="c1"># In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N&lt;10^7, k+15 should be enough:</span>
+        <span class="n">max_k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">15</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>  <span class="c1"># Query up to k+15 neighbors, but not all points</span>
+        <span class="n">dists_fixed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx_to_fix</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="n">max_k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span>
+
+        <span class="c1"># Find the first nonzero distance for each affected point</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dist_row</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">,</span> <span class="n">dists_fixed</span><span class="p">):</span>
+            <span class="n">nonzero_NN</span> <span class="o">=</span> <span class="n">dist_row</span><span class="p">[</span><span class="n">dist_row</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># Ignore self-matches (zero distances)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nonzero_NN</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dist_kNN</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">nonzero_NN</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Take k-th first nonzero distance</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;tropygal: point&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s1">&#39;with no neighbor with D_NN&gt;0 found.&#39;</span><span class="p">)</span>
+
+    <span class="n">ln_D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">dist_kNN</span><span class="p">)</span>
+    
+<span class="c1">#    ln_f = -np.log(N-1.) - np.euler_gamma - np.log(V_d(dim)) - dim*ln_D</span>
+<span class="c1">#    ln_f = -psi(N) + psi(k) - np.log(V_d(dim)) - dim*ln_D</span>
+    <span class="n">avg_ln_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span> <span class="o">+</span> <span class="n">psi</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">V_d</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span> <span class="o">-</span> <span class="n">dim</span><span class="o">*</span><span class="n">ln_D</span><span class="p">)</span>
+    <span class="n">avg_ln_mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mu</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">correct_bias</span><span class="o">==</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1"># The fraction of the volume around particle i inside the domain:</span>
+        <span class="n">log_frac_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="p">(</span><span class="n">vol_correction</span><span class="o">==</span><span class="s1">&#39;cube&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">l_cube_over_d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">l_cube_over_d</span> <span class="o">=</span> <span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+            <span class="n">l_cube</span> <span class="o">=</span> <span class="n">l_cube_over_d</span> <span class="o">*</span> <span class="n">dist_kNN</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="p">):</span>
+                <span class="n">xmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="n">j</span><span class="p">])</span>
+                <span class="n">xmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="n">j</span><span class="p">])</span>
+
+                <span class="n">dx_max_over_l_cube</span> <span class="o">=</span> <span class="p">(</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">data</span><span class="p">[:,</span> <span class="n">j</span><span class="p">])</span> <span class="o">/</span> <span class="n">l_cube</span> <span class="c1"># we only need to correct if this is &lt; 1/2, i.e. if the volume of the cube goes beyond support</span>
+                <span class="n">dx_min_over_l_cube</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">l_cube</span> <span class="c1"># we only need to correct if this is &lt; 1/2</span>
+
+                <span class="n">needs_correc</span> <span class="o">=</span> <span class="n">dx_max_over_l_cube</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+                <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">=</span> <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="n">dx_max_over_l_cube</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">])</span>
+
+                <span class="n">needs_correc</span> <span class="o">=</span> <span class="n">dx_min_over_l_cube</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+                <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">=</span> <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="n">dx_min_over_l_cube</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">])</span>
+            <span class="n">correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">log_frac_vol</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">correction</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># raise ValueError(&quot;tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: &#39;cube&#39;, &#39;actions&#39; or &#39;sph&#39;&quot;)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: &#39;cube&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">avg_ln_f</span> <span class="o">+</span> <span class="n">avg_ln_mu</span> <span class="o">+</span> <span class="n">correction</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">avg_ln_f</span> <span class="o">+</span> <span class="n">avg_ln_mu</span></div>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="cross_entropy">
+<a class="viewcode-back" href="../../reference.html#tropygal.cross_entropy">[docs]</a>
+<span class="k">def</span> <span class="nf">cross_entropy</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">correct_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">vol_correction</span><span class="o">=</span><span class="s1">&#39;cube&#39;</span><span class="p">,</span> <span class="n">l_cube_over_d</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">workers</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate of the cross entropy H = - int f0 ln (f/mu) d^dim x.</span>
+<span class="sd">    The factor mu ensures that f/mu is dimensionless and</span>
+<span class="sd">    it also stores the density of states if the DF is a function of integrals only.</span>
+<span class="sd">    For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.</span>
+<span class="sd">    H is estimated as (1/N) * sum_i=1^N ln(f_i),</span>
+<span class="sd">    where f_i is the estimate of the DF f based on the dist. of point i in sample 1 to its kth neighbor in sample 2.</span>
+<span class="sd">    For NN (Nerest Neighbor) method:</span>
+<span class="sd">    From e.g. Eq. (11) in Leonenko, Pronzato, Savani (2008):</span>
+<span class="sd">    f_i = 1/[ M * exp(-psi(k)) * V_d * D^d ], where:</span>
+<span class="sd">    N is size of sample 1,</span>
+<span class="sd">    M is size of sample 2,</span>
+<span class="sd">    psi is the digamma function,</span>
+<span class="sd">    V_d is the volume of unitary hypersphere in d-dimensions,</span>
+<span class="sd">    D is the Euclidean distance of particle i in sample 1 to its kth neighbor in sample 2.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data1: array [N, dim]</span>
+<span class="sd">       Data points of sample 1</span>
+<span class="sd">    data2: array [M, dim]</span>
+<span class="sd">       Data points of sample 2</span>
+<span class="sd">    mu: float number or array of size N</span>
+<span class="sd">       It ensures the argument of ln() is dimensionless.</span>
+<span class="sd">       If x -&gt; = x/sigma_x, y -&gt; y/sigma_y... -&gt; mu = 1/(sigma_x*sigma_y...).</span>
+<span class="sd">       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3,</span>
+<span class="sd">       in cases where the DF depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.</span>
+<span class="sd">    k: int value</span>
+<span class="sd">       kth nearest neighbor</span>
+<span class="sd">    correct_bias: Boolean</span>
+<span class="sd">       If correct for bias due to boundary effects as proposed by Charzynska &amp; Gambin 2015</span>
+<span class="sd">    vol_correction: string</span>
+<span class="sd">       strategy for correction:</span>
+<span class="sd">       - &#39;cube&#39;: the support is assumed to be a paralelepiped, and the volume around each point is a cube</span>
+<span class="sd">    l_cube_over_d: float</span>
+<span class="sd">      Side of cube around each point divided by D, the distance to the k-neighbor.</span>
+<span class="sd">      A typically good choice is a cube inscribed in the sphere, i.e. side/D = 2/sqrt(dim). If None, this is set by default</span>
+<span class="sd">    workers: int (default: -1, meaning using all CPUs available).</span>
+<span class="sd">       Number of CPUs to be used to parallelize the seacrh for NNs.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">       cross entropy estimate -&lt;ln(f/mu)&gt; = - (1/N)*sum_i=1^N ln(f_i/mu_i)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data1</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data2</span><span class="p">))):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data1</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">data1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data1</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">data2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data2</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data1</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data2</span><span class="p">)[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays&quot;</span><span class="p">)</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    
+    <span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">leafsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># default leafsize=10</span>
+    <span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span> <span class="c1"># workers is number of threads. -1 means all threads</span>
+
+    <span class="n">dist_kNN</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[:,</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">idx_to_fix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dist_kNN</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)</span>
+        <span class="c1">#print (&#39;tropygal:&#39;, len(idx_to_fix),&#39; points with zero D_NN. Taking next neighbors until D_NN&gt;0...&#39;)</span>
+        <span class="c1"># For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.</span>
+        <span class="c1"># In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N&lt;10^7, k+15 should be enough:</span>
+        <span class="n">max_k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">15</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>  <span class="c1"># Query up to k+15 neighbors, but not all points</span>
+        <span class="n">dists_fixed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data1</span><span class="p">[</span><span class="n">idx_to_fix</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="n">max_k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span>
+
+        <span class="c1"># Find the first nonzero distance for each affected point</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dist_row</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">,</span> <span class="n">dists_fixed</span><span class="p">):</span>
+            <span class="n">nonzero_NN</span> <span class="o">=</span> <span class="n">dist_row</span><span class="p">[</span><span class="n">dist_row</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># Ignore self-matches (zero distances)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nonzero_NN</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dist_kNN</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">nonzero_NN</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Take k-th first nonzero distance</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;tropygal: point&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s1">&#39;with no neighbor with D_NN&gt;0 found.&#39;</span><span class="p">)</span>
+
+    <span class="n">ln_D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">dist_kNN</span><span class="p">)</span>
+
+    <span class="n">avg_ln_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">M</span><span class="p">)</span> <span class="o">+</span> <span class="n">psi</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">V_d</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span> <span class="o">-</span> <span class="n">dim</span><span class="o">*</span><span class="n">ln_D</span><span class="p">)</span>
+    <span class="n">avg_ln_mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">mu</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">correct_bias</span><span class="o">==</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1"># The fraction of the volume around particle i inside the domain:</span>
+        <span class="n">log_frac_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dist_kNN</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">vol_correction</span><span class="o">==</span><span class="s1">&#39;cube&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">l_cube_over_d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">l_cube_over_d</span> <span class="o">=</span> <span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+            <span class="n">l_cube</span> <span class="o">=</span> <span class="n">l_cube_over_d</span> <span class="o">*</span> <span class="n">dist_kNN</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="p">):</span>
+                <span class="n">xmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">data2</span><span class="p">[:,</span> <span class="n">j</span><span class="p">])</span>
+                <span class="n">xmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">data2</span><span class="p">[:,</span> <span class="n">j</span><span class="p">])</span>
+
+                <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">data1</span><span class="p">[:,</span> <span class="n">j</span><span class="p">],</span> <span class="n">xmin</span><span class="p">),</span> <span class="n">xmax</span><span class="p">)</span>
+
+                <span class="n">dx_max_over_l_cube</span> <span class="o">=</span> <span class="p">(</span><span class="n">xmax</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">l_cube</span> <span class="c1"># we only need to correct if this is &lt; 1, i.e. if the volume of the ball goes beyond support</span>
+                <span class="n">dx_min_over_l_cube</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">)</span> <span class="o">/</span> <span class="n">l_cube</span> <span class="c1"># we only need to correct if this is &lt; 1</span>
+
+                <span class="n">needs_correc</span> <span class="o">=</span> <span class="n">dx_max_over_l_cube</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+                <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">=</span> <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="n">dx_max_over_l_cube</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">])</span>
+
+                <span class="n">needs_correc</span> <span class="o">=</span> <span class="n">dx_min_over_l_cube</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+                <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">=</span> <span class="n">log_frac_vol</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="n">dx_min_over_l_cube</span><span class="p">[</span><span class="n">needs_correc</span><span class="p">])</span>
+            <span class="n">correction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">log_frac_vol</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">correction</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="c1"># raise ValueError(&quot;tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: &#39;cube&#39;, &#39;actions&#39; or &#39;sph&#39;&quot;)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: &#39;cube&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">avg_ln_f</span> <span class="o">+</span> <span class="n">avg_ln_mu</span> <span class="o">+</span> <span class="n">correction</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">avg_ln_f</span> <span class="o">+</span> <span class="n">avg_ln_mu</span></div>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="C_k">
+<a class="viewcode-back" href="../../reference.html#tropygal.C_k">[docs]</a>
+<span class="k">def</span> <span class="nf">C_k</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For Renyi entropy.</span>
+<span class="sd">    Check Eq. (7) in Leonenko, Pronzato, Savani (2008)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    q: float number</span>
+<span class="sd">       q index in Rényi entropy (must be != 1)</span>
+<span class="sd">    k: int value</span>
+<span class="sd">       kth nearest neighbor</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">       C_k</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">Gamma</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">/</span><span class="n">Gamma</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mf">1.</span><span class="o">-</span><span class="n">q</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">q</span><span class="p">))</span></div>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="renyi_entropy">
+<a class="viewcode-back" href="../../reference.html#tropygal.renyi_entropy">[docs]</a>
+<span class="k">def</span> <span class="nf">renyi_entropy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate of Rényi entropy</span>
+<span class="sd">    S_q = [1/(1 - q)] ln int f (f/mu)^(q-1) d^dim x, for q != 1.</span>
+<span class="sd">    The factor mu ensures that f/mu is dimensionless.</span>
+
+<span class="sd">    S_q is estimated as [1/(1-q)] ln (1/N) * sum_i=1^N (f_i/mu_i)^(q-1),</span>
+<span class="sd">    where f_i is the estimate of the DF f around point/particle/star i</span>
+<span class="sd">    For NN (Nerest Neighbor) method:</span>
+<span class="sd">    From e.g. Eq. (7) in Leonenko, Pronzato, Savani (2008):</span>
+<span class="sd">    f_i = 1/[ (N-1) * C_k * V_d * D^dim ], where</span>
+<span class="sd">    C_k = [Gamma(k)/Gamma(k+1-q)]^[1/(1-q)]</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: array [N, dim]</span>
+<span class="sd">       Data points</span>
+<span class="sd">    mu: float number or array of size N</span>
+<span class="sd">       It ensures the argument of ln() is dimensionless.</span>
+<span class="sd">       If x&#39; = x/sigma_x, y&#39; = y/sigma_y... -&gt; mu = 1/(sigma_x*sigma_y...).</span>
+<span class="sd">       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3, in cases where the DF</span>
+<span class="sd">       depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.</span>
+<span class="sd">    q: float value</span>
+<span class="sd">       q-parameter of the entropy; needs to be q != 1</span>
+<span class="sd">    k: int value</span>
+<span class="sd">       kth nearest neighbor</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">       entropy estimate [1/(1 - q)] ln &lt;(f/mu)^(q-1)&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: Array with data should be of form [N, dim].&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">q</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span> <span class="p">(</span><span class="s1">&#39;tropygal: For the Rényi entropy, q needs to be != 1&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    
+    <span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">leafsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># default leafsize=10</span>
+    <span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># workers is number of threads. -1 means all threads</span>
+
+    <span class="c1"># Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).</span>
+    <span class="c1"># In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN &gt;0</span>
+    <span class="n">dist_kNN</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[:,</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">idx_to_fix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dist_kNN</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)</span>
+        <span class="c1">#print (&#39;tropygal:&#39;, len(idx_to_fix),&#39; points with zero D_NN. Taking next neighbors until D_NN&gt;0...&#39;)</span>
+        <span class="c1"># For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.</span>
+        <span class="c1"># In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N&lt;10^7, k+15 should be enough:</span>
+        <span class="n">max_k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">15</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>  <span class="c1"># Query up to k+15 neighbors, but not all points</span>
+        <span class="n">dists_fixed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx_to_fix</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="n">max_k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span>
+
+        <span class="c1"># Find the first nonzero distance for each affected point</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dist_row</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">,</span> <span class="n">dists_fixed</span><span class="p">):</span>
+            <span class="n">nonzero_NN</span> <span class="o">=</span> <span class="n">dist_row</span><span class="p">[</span><span class="n">dist_row</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># Ignore self-matches (zero distances)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nonzero_NN</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dist_kNN</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">nonzero_NN</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Take k-th first nonzero distance</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;tropygal: point&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s1">&#39;with no neighbor with D_NN&gt;0 found.&#39;</span><span class="p">)</span>
+        
+    <span class="c1">#D = dist_kNN[idx]</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span> <span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">C_k</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">V_d</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">*</span> <span class="n">dist_kNN</span><span class="o">**</span><span class="n">dim</span> <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">q</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">f</span><span class="o">/</span><span class="n">mu</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">q</span><span class="o">-</span><span class="mf">1.</span><span class="p">)))</span></div>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="tsallis_entropy">
+<a class="viewcode-back" href="../../reference.html#tropygal.tsallis_entropy">[docs]</a>
+<span class="k">def</span> <span class="nf">tsallis_entropy</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate of Tsallis entropy</span>
+<span class="sd">    S_q = [1/(q - 1)][ 1 - int f (f/mu)^(q-1) d^dim x ], for q != 1.</span>
+<span class="sd">    The factor mu ensures that f/mu is dimensionless.</span>
+
+<span class="sd">    S_q is estimated as [1/(q - 1)] [ 1 - (1/N) * sum_i=1^N (f_i/mu_i)^(q-1) ],</span>
+<span class="sd">    where f_i is the estimate of the DF f around point/particle/star i</span>
+<span class="sd">    For NN (Nerest Neighbor) method:</span>
+<span class="sd">    From e.g. Eq. (7) in Leonenko, Pronzato, Savani (2008):</span>
+<span class="sd">    f_i = 1/[ (N-1) * C_k * V_d * D^dim ],</span>
+<span class="sd">    where C_k = [Gamma(k)/Gamma(k+1-q)]^[1/(1-q)]</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: array [N, dim]</span>
+<span class="sd">       Data points</span>
+<span class="sd">    mu: float number or array of size N</span>
+<span class="sd">       It ensures the argument of ln() is dimensionless.</span>
+<span class="sd">       If x -&gt; = x/sigma_x, y -&gt; y/sigma_y... -&gt; mu = 1/(sigma_x*sigma_y...).</span>
+<span class="sd">       It is also the density of states, e.g. mu = g(E), mu = g(E,L) or mu = (2pi)^3,</span>
+<span class="sd">       in cases where the DF depends only on integrals, e.g. energy, or energy and angular momentum, or actions, respectively.</span>
+<span class="sd">    q: int value</span>
+<span class="sd">       q-parameter of the entropy; needs to be q != 1</span>
+<span class="sd">    k: int value</span>
+<span class="sd">       kth nearest neighbor</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">       entropy estimate [1/(q - 1)] [ 1 -  &lt;f^(q-1)&gt; ]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">==</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: Array with data should be of form [N, dim].&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">q</span><span class="o">==</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span> <span class="p">(</span><span class="s1">&#39;tropygal: For the Tsallis entropy, q needs to be != 1.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    
+    <span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">leafsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># default leafsize=10</span>
+    <span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># workers is number of threads. -1 means all threads</span>
+
+    <span class="c1"># Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).</span>
+    <span class="c1"># In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN &gt;0</span>
+    <span class="n">dist_kNN</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[:,</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">idx_to_fix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dist_kNN</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)</span>
+        <span class="c1">#print (&#39;tropygal:&#39;, len(idx_to_fix),&#39; points with zero D_NN. Taking next neighbors until D_NN&gt;0...&#39;)</span>
+        <span class="c1"># For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.</span>
+        <span class="c1"># In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N&lt;10^7, k+15 should be enough:</span>
+        <span class="n">max_k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">15</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>  <span class="c1"># Query up to k+15 neighbors, but not all points</span>
+        <span class="n">dists_fixed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">idx_to_fix</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="n">max_k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">workers</span><span class="o">=</span><span class="n">workers</span><span class="p">)</span>
+
+        <span class="c1"># Find the first nonzero distance for each affected point</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dist_row</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx_to_fix</span><span class="p">,</span> <span class="n">dists_fixed</span><span class="p">):</span>
+            <span class="n">nonzero_NN</span> <span class="o">=</span> <span class="n">dist_row</span><span class="p">[</span><span class="n">dist_row</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># Ignore self-matches (zero distances)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nonzero_NN</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dist_kNN</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">nonzero_NN</span><span class="p">[</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Take k-th first nonzero distance</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;tropygal: point&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s1">&#39;with no neighbor with D_NN&gt;0 found.&#39;</span><span class="p">)</span>
+        
+    <span class="c1">#D = dist_kNN[idx]</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span> <span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">C_k</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">V_d</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">*</span> <span class="n">dist_kNN</span><span class="o">**</span><span class="n">dim</span> <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span><span class="o">*</span><span class="p">(</span> <span class="mf">1.</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">f</span><span class="o">/</span><span class="n">mu</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">q</span><span class="o">-</span><span class="mf">1.</span><span class="p">)))</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">tropygal.base_funcs</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Leandro Beraldo e Silva.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

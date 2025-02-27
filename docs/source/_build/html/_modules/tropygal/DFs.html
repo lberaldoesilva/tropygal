@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tropygal.DFs &#8212; tropygal 0.1.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinxdoc.css?v=87629129" />
+    <script src="../../_static/documentation_options.js?v=a58bc63e"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">tropygal.DFs</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tropygal.DFs</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.constants</span> <span class="kn">import</span> <span class="n">_G_gal</span>
+<span class="kn">from</span> <span class="nn">.potentials</span> <span class="kn">import</span> <span class="n">Tr_Spherical</span>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="DF_Isochrone">
+<a class="viewcode-back" href="../../reference.html#tropygal.DF_Isochrone">[docs]</a>
+<span class="k">def</span> <span class="nf">DF_Isochrone</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">_G_gal</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Distribution Function (DF) of isochrone model - see Binney &amp; Tremaine (2008), Eq. (4.54)</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">         energy</span>
+<span class="sd">    M: float</span>
+<span class="sd">         total mass</span>
+<span class="sd">    b: float</span>
+<span class="sd">         scale lenght</span>
+<span class="sd">    G: float</span>
+<span class="sd">         gravitational constant (standard value in kpc Msun^-1 (km/s)2)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      the DF</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">E</span><span class="o">/</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="o">*</span><span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">A</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">e</span><span class="p">))</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span><span class="o">*</span>
+            <span class="p">(</span><span class="mi">27</span> <span class="o">-</span> <span class="mi">66</span><span class="o">*</span><span class="n">e</span> <span class="o">+</span> <span class="mi">320</span><span class="o">*</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">240</span><span class="o">*</span><span class="n">e</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">64</span><span class="o">*</span><span class="n">e</span><span class="o">**</span><span class="mi">4</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">16</span><span class="o">*</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">28</span><span class="o">*</span><span class="n">e</span> <span class="o">-</span><span class="mi">9</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">e</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">e</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="p">))))</span></div>
+
+<span class="c1">#------------------------</span>
+<div class="viewcode-block" id="g_Isochrone">
+<a class="viewcode-back" href="../../reference.html#tropygal.g_Isochrone">[docs]</a>
+<span class="k">def</span> <span class="nf">g_Isochrone</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">_G_gal</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The density of states for the isotropic isochrone model</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">         energy</span>
+<span class="sd">    M: float</span>
+<span class="sd">         total mass</span>
+<span class="sd">    b: float</span>
+<span class="sd">         scale lenght</span>
+<span class="sd">    G: float</span>
+<span class="sd">         gravitational constant (standard value in kpc Msun^-1 (km/s)2)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      the density of states</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Petrou, M. 1985, MNRAS, 214, 449</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">E</span><span class="o">/</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="p">)</span><span class="o">*</span><span class="n">b</span><span class="o">**</span><span class="mf">2.5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="p">)</span><span class="o">**</span><span class="mf">2.5</span></div>
+
+<span class="c1">#------------------------</span>
+<div class="viewcode-block" id="Tr_Isochrone">
+<a class="viewcode-back" href="../../reference.html#tropygal.Tr_Isochrone">[docs]</a>
+<span class="k">def</span> <span class="nf">Tr_Isochrone</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">_G_gal</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The period of radial oscillation for the isochrone model</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">         energy</span>
+<span class="sd">    M: float</span>
+<span class="sd">         total mass</span>
+<span class="sd">    G: float</span>
+<span class="sd">         gravitational constant (standard value in kpc Msun^-1 (km/s)2)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      the period of radial motion</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="n">M</span><span class="o">*</span><span class="n">G</span><span class="o">/</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">E</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span></div>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="gEL_Isochrone">
+<a class="viewcode-back" href="../../reference.html#tropygal.gEL_Isochrone">[docs]</a>
+<span class="k">def</span> <span class="nf">gEL_Isochrone</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">_G_gal</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The density of states for the isochrone model, but assuming (generically) a DF that depends on energy and angular momentum</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">         energy</span>
+<span class="sd">    L: float</span>
+<span class="sd">         angular momentum</span>
+<span class="sd">    M: float</span>
+<span class="sd">         total mass</span>
+<span class="sd">    G: float</span>
+<span class="sd">         gravitational constant (standard value in kpc Msun^-1 (km/s)2)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      the density of states</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mf">8.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">L</span><span class="o">*</span><span class="n">Tr_Isochrone</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">G</span><span class="p">)</span></div>
+
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="DF_Hernquist">
+<a class="viewcode-back" href="../../reference.html#tropygal.DF_Hernquist">[docs]</a>
+<span class="k">def</span> <span class="nf">DF_Hernquist</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">_G_gal</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Distribution Function (DF) of Hernquist model - see Hernquist (1990)</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">         energy</span>
+<span class="sd">    M: float</span>
+<span class="sd">         total mass</span>
+<span class="sd">    b: float</span>
+<span class="sd">         scale lenght</span>
+<span class="sd">    G: float</span>
+<span class="sd">         gravitational constant (standard value in kpc Msun^-1 (km/s)2)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      the DF</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    .. [2] Hernquist, L. (1990)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">E</span><span class="o">/</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="o">*</span><span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span> <span class="n">A</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">e</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span>
+             <span class="p">(</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mf">2.</span><span class="o">*</span><span class="n">e</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">8.</span><span class="o">*</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">8.</span><span class="o">*</span><span class="n">e</span> <span class="o">-</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="mf">3.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">e</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">e</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="n">e</span><span class="p">))</span> <span class="p">)</span> <span class="p">)</span></div>
+
+<span class="c1">#------------------------</span>
+<div class="viewcode-block" id="g_Hernquist">
+<a class="viewcode-back" href="../../reference.html#tropygal.g_Hernquist">[docs]</a>
+<span class="k">def</span> <span class="nf">g_Hernquist</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">_G_gal</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The density of states for the Hernquist model</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">         energy</span>
+<span class="sd">    M: float</span>
+<span class="sd">         total mass</span>
+<span class="sd">    b: float</span>
+<span class="sd">         scale lenght</span>
+<span class="sd">    G: float</span>
+<span class="sd">         gravitational constant (standard value in kpc Msun^-1 (km/s)2)</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in Phi and dPhi_dr</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      the density of states</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    .. [2] Hernquist, L. (1990)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">E</span><span class="o">/</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="p">)</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span> <span class="p">(</span><span class="mf">4.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">b</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">E</span><span class="p">))</span><span class="o">*</span>
+           <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">A</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">*</span><span class="n">A</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="mf">5.</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span><span class="o">*</span><span class="n">A</span> <span class="o">-</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span> <span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">*</span><span class="n">A</span><span class="o">*</span><span class="p">(</span><span class="n">A</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">A</span> <span class="o">+</span> <span class="mi">8</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">A</span><span class="p">)))</span> <span class="p">)</span></div>
+
+<span class="c1">#------------------------</span>
+<span class="c1"># def Tr_Spherical(coords, pot):</span>
+<span class="c1">#     &quot;&quot;&quot; The period of radial oscillation for the a generic spherical potential. Current version requires agama</span>
+    
+<span class="c1">#     Parameters</span>
+<span class="c1">#     ----------</span>
+<span class="c1">#     coords: 6D array</span>
+<span class="c1">#          coordinates of particle</span>
+<span class="c1">#     pot: potential object</span>
+<span class="c1">#          total potential</span>
+
+<span class="c1">#     Returns</span>
+<span class="c1">#     -------</span>
+<span class="c1">#     float</span>
+<span class="c1">#       the period of radial motion</span>
+
+<span class="c1">#     References</span>
+<span class="c1">#     ----------</span>
+<span class="c1">#     .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     import agama</span>
+<span class="c1">#     actF = agama.ActionFinder(pot)</span>
+<span class="c1">#     Omega = actF(coords, actions=False, frequencies=True, angles=False)</span>
+
+<span class="c1">#     Om_r = Omega[:,0]</span>
+<span class="c1">#     return (2.*np.pi)/Om_r</span>
+<span class="c1">#-----------------------------</span>
+<div class="viewcode-block" id="gEL_Spherical">
+<a class="viewcode-back" href="../../reference.html#tropygal.gEL_Spherical">[docs]</a>
+<span class="k">def</span> <span class="nf">gEL_Spherical</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Phi</span><span class="p">,</span> <span class="n">dPhi_dr</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The density of states assuming a DF that depends on energy and angular momentum, in a generic spherical potential. It requires a function calculating the potential Phi and another calculating its derivative</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: array (or scalar)</span>
+<span class="sd">        energy of particle</span>
+<span class="sd">    L: array (or scalar)</span>
+<span class="sd">        angular momentum of particle</span>
+<span class="sd">    Phi: function</span>
+<span class="sd">         total potential</span>
+<span class="sd">    dPhi_dr: function</span>
+<span class="sd">         derivative of the potential</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in Phi and dPhi_dr</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      the density of states</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="mf">8.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">L</span><span class="o">*</span><span class="n">Tr_Spherical</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Phi</span><span class="p">,</span> <span class="n">dPhi_dr</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">tropygal.DFs</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Leandro Beraldo e Silva.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

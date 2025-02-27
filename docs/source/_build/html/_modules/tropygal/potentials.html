@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tropygal.potentials &#8212; tropygal 0.1.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinxdoc.css?v=87629129" />
+    <script src="../../_static/documentation_options.js?v=a58bc63e"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">tropygal.potentials</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for tropygal.potentials</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+
+<span class="kn">from</span> <span class="nn">.constants</span> <span class="kn">import</span> <span class="n">_G_gal</span>
+
+<span class="c1">#----------------</span>
+<div class="viewcode-block" id="find_Phi_eff_min">
+<a class="viewcode-back" href="../../reference.html#tropygal.find_Phi_eff_min">[docs]</a>
+<span class="k">def</span> <span class="nf">find_Phi_eff_min</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">dPhi_dr</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">range_0</span><span class="o">=</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">,</span> <span class="mf">1e+3</span><span class="p">),</span> <span class="n">max_range</span><span class="o">=</span><span class="mf">1e+8</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Find the location of the minimum of the effective potential.</span>
+<span class="sd">    The effective potential is defined as Phi_eff = Phi + L**2/(2.*r**2).</span>
+<span class="sd">    This function is primarily to calculate the peri- and apo-center radii rper and rapo, but can also be used with any other purposes.</span>
+<span class="sd">    rper and rapo, on the other hand, are primarily calculated to calculate the period of radial motion T_r.</span>
+<span class="sd">    T_r on its turn can be used to calculate the density of states for DFs assumed to depend on energy and angular momentum as g(E,L) = 8 pi^2 L T_r(E,L).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    L: array (or scalar)</span>
+<span class="sd">        angular momentum of particle</span>
+<span class="sd">    dPhi_dr: function</span>
+<span class="sd">        function with signature (r, params), evaluating the derivative of the potential at each radius</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in Phi and dPhi_dr</span>
+<span class="sd">    range_0: tuple</span>
+<span class="sd">        the initial range within which we search for the root of dPhi_eff_dr</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array, array</span>
+<span class="sd">        Arrays containing rper and rapo for all particles used at input</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+    <span class="n">rmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">L</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">L</span><span class="p">)):</span>
+        <span class="c1"># derivative of effective potential:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">dPhi_dr</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="o">-</span> <span class="n">L</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">r</span><span class="o">**</span><span class="mi">3</span>
+    
+        <span class="n">this_range</span> <span class="o">=</span> <span class="n">range_0</span>
+        <span class="c1"># Try progressively larger intervals</span>
+        <span class="k">while</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">this_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">this_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span> 
+    
+            <span class="k">if</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">max_range</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: Could not find minimum of Phi_eff - Try increasing max_range (standard is 1e+8).&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rmin</span></div>
+
+<span class="c1">#----------------</span>
+<div class="viewcode-block" id="find_rper_rapo">
+<a class="viewcode-back" href="../../reference.html#tropygal.find_rper_rapo">[docs]</a>
+<span class="k">def</span> <span class="nf">find_rper_rapo</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Phi</span><span class="p">,</span> <span class="n">dPhi_dr</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">range_0</span><span class="o">=</span><span class="p">(</span><span class="mf">1e-2</span><span class="p">,</span> <span class="mf">1e+2</span><span class="p">),</span> <span class="n">max_range</span><span class="o">=</span><span class="mf">1e+8</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Find peri- and apo-center distances with interval adjustments.</span>
+<span class="sd">    It first identifies rmin, the location of the minimum of the effective potential.</span>
+<span class="sd">    The effective potential is defined as Phi_eff = Phi + L**2/(2.*r**2).</span>
+<span class="sd">    Then it defines the range where brentq should look for roots, such that the pericenter radius rper is searched from rmin inwards, and rapo is searched from rmin outwards.</span>
+<span class="sd">    rper and rapo are primarily calculated to calculate the period of radial motion T_r.</span>
+<span class="sd">    T_r on its turn can be used to calculate the density of states for DFs assumed to depend on energy and angular momentum as g(E,L) = 8 pi^2 L T_r(E,L).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: array (or scalar)</span>
+<span class="sd">        energy of particle</span>
+<span class="sd">    L: array (or scalar)</span>
+<span class="sd">        angular momentum of particle</span>
+<span class="sd">    Phi: function</span>
+<span class="sd">        function with signature (r, params), evaluating the potential at each radius</span>
+<span class="sd">    dPhi_dr: function</span>
+<span class="sd">        function with signature (r, params), evaluating the derivative of the potential at each radius</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in Phi and dPhi_dr</span>
+<span class="sd">    range_0: tuple</span>
+<span class="sd">        the initial range within which we search for the roots defining rper and rapo</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array, array</span>
+<span class="sd">        Arrays containing rper and rapo for all particles used at input</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">E</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">rapo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">E</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="c1"># Before calculating rper and rapo, find the minimum of Phi_eff:</span>
+    <span class="n">rmin</span> <span class="o">=</span> <span class="n">find_Phi_eff_min</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">dPhi_dr</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">E</span><span class="p">)):</span>
+        <span class="c1"># define the function for which we seek roots (in the denominator of the integrand of Tr, the radial period)</span>
+        <span class="c1"># f = lambda r: E[i] - Phi_eff(r, L[i], Phi, params)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">E</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">Phi</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="o">-</span> <span class="n">L</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        
+        <span class="n">this_range</span> <span class="o">=</span> <span class="n">range_0</span>
+        <span class="c1"># Make sure rmin in within the initial range where brentq will look for rper and rapo:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">this_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="n">this_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="n">this_range</span> <span class="o">=</span>  <span class="p">(</span><span class="n">this_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">new_range_0</span> <span class="o">=</span> <span class="n">this_range</span>
+        <span class="c1"># Try progressively larger intervals</span>
+        <span class="c1">#-------------</span>
+        <span class="c1"># for rper:</span>
+        <span class="k">while</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">this_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">this_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>  <span class="c1"># Expand lower bound </span>
+        <span class="c1">#-------------</span>
+        <span class="c1"># for rapo:</span>
+        <span class="n">this_range</span> <span class="o">=</span> <span class="n">new_range_0</span>
+        <span class="k">while</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">rapo</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rapo</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">this_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">rmin</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># Expand upper bound</span>
+            
+        <span class="k">if</span> <span class="n">this_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">max_range</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tropygal: Could not find peri- and apo-center distances in specified range.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rper</span><span class="p">,</span> <span class="n">rapo</span></div>
+
+<span class="c1">#------------------------</span>
+<div class="viewcode-block" id="Tr_Spherical">
+<a class="viewcode-back" href="../../reference.html#tropygal.Tr_Spherical">[docs]</a>
+<span class="k">def</span> <span class="nf">Tr_Spherical</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Phi</span><span class="p">,</span> <span class="n">dPhi_dr</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The period of radial oscillation, T_r, for the a generic spherical potential. See Binney &amp; Tremaine (2008) - eq. (3.17).</span>
+<span class="sd">    T_r can be used, among other things, to calculate the density of states for DFs assumed to depend on energy and angular momentum as g(E,L) = 8 pi^2 L T_r(E,L).</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: array (or scalar)</span>
+<span class="sd">        energy of particle</span>
+<span class="sd">    L: array (or scalar)</span>
+<span class="sd">        angular momentum of particle</span>
+<span class="sd">    Phi: function</span>
+<span class="sd">        function with signature (r, params), evaluating the potential at each radius</span>
+<span class="sd">    dPhi_dr: function</span>
+<span class="sd">        function with signature (r, params), evaluating the derivative of the potential at each radius</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in Phi and dPhi_dr</span>
+<span class="sd">     </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float array</span>
+<span class="sd">      The period of radial motion</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rper</span><span class="p">,</span> <span class="n">rapo</span> <span class="o">=</span> <span class="n">find_rper_rapo</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Phi</span><span class="p">,</span> <span class="n">dPhi_dr</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+    <span class="c1">#-----------------</span>
+    <span class="k">def</span> <span class="nf">integrand</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">Phi</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="c1"># return 2./np.sqrt(2.*( E - Phi_eff(r, L, Phi, params)))</span>
+        <span class="k">return</span> <span class="mf">2.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="p">(</span> <span class="n">E</span> <span class="o">-</span> <span class="n">Phi</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">params</span><span class="p">))</span> <span class="o">-</span> <span class="n">L</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c1">#-----------------</span>
+    <span class="n">T_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">E</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">E</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">rapo</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="n">T_r</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">integrand</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">b</span><span class="o">=</span><span class="n">rapo</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">E</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">L</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">Phi</span><span class="p">,</span> <span class="n">params</span><span class="p">),</span> <span class="n">full_output</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For orbits very close to circular:</span>
+            <span class="c1"># we estimete the second derivative of the effective potential numerically and approximate</span>
+            <span class="c1"># Tr ~ 2pi/sqrt(d^2Phi_eff/dr^2 (rc)), where rc is the radius of circular motion</span>
+            <span class="n">h</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="o">*</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="c1"># d2Phi_eff_dr2 = (Phi_eff(rper[i] + h, L[i], Phi, params) - 2 * Phi_eff(rper[i], L[i], Phi, params) + Phi_eff(rper[i] - h, L[i], Phi, params)) / h**2</span>
+            <span class="n">d2Phi_eff_dr2</span> <span class="o">=</span> <span class="p">(</span><span class="n">Phi</span><span class="p">(</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">h</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">Phi</span><span class="p">(</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">params</span><span class="p">)</span> <span class="o">+</span> <span class="n">Phi</span><span class="p">(</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">h</span><span class="p">,</span> <span class="n">params</span><span class="p">))</span> <span class="o">/</span> <span class="n">h</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">L</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="n">rper</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+            <span class="n">T_r</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">d2Phi_eff_dr2</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;tropygal: Aproximating Tr for very circular orbit.&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">T_r</span></div>
+
+<span class="c1">#----------------------</span>
+<div class="viewcode-block" id="Phi_Isochrone">
+<a class="viewcode-back" href="../../reference.html#tropygal.Phi_Isochrone">[docs]</a>
+<span class="k">def</span> <span class="nf">Phi_Isochrone</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The gravitational potential for the Isochrone model.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r: array (or scalar)</span>
+<span class="sd">         radial coordinate of particle</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in the potential.</span>
+<span class="sd">     </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      The potential evaluated at radius r.</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># total mass</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># scale length</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="c1"># Gravitational constant</span>
+    
+    <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span></div>
+
+<span class="c1">#----------------------</span>
+<div class="viewcode-block" id="dPhi_dr_Isochrone">
+<a class="viewcode-back" href="../../reference.html#tropygal.dPhi_dr_Isochrone">[docs]</a>
+<span class="k">def</span> <span class="nf">dPhi_dr_Isochrone</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The derivative of the gravitational potential for the Isochrone model.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r: array (or scalar)</span>
+<span class="sd">         radial coordinate of particle</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in the potential.</span>
+<span class="sd">     </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The derivative of the potential, evaluated at a radius r.</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># total mass</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># scale length</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="c1"># Gravitational constant</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="o">/</span><span class="n">b</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span></div>
+
+<span class="c1">#----------------------</span>
+<div class="viewcode-block" id="Phi_Hernquist">
+<a class="viewcode-back" href="../../reference.html#tropygal.Phi_Hernquist">[docs]</a>
+<span class="k">def</span> <span class="nf">Phi_Hernquist</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The gravitational potential for the Hernquist model.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r: array (or scalar)</span>
+<span class="sd">         radial coordinate of particle</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in the potential.</span>
+<span class="sd">     </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">      The potential evaluated at radius r.</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Hernquist, L (1990).</span>
+<span class="sd">    .. [2] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># total mass</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># scale length</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="c1"># Gravitational constant</span>
+    
+    <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">*</span><span class="p">(</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">r</span><span class="o">/</span><span class="n">b</span><span class="p">)</span> <span class="p">)</span></div>
+
+<span class="c1">#----------------------</span>
+<div class="viewcode-block" id="dPhi_dr_Hernquist">
+<a class="viewcode-back" href="../../reference.html#tropygal.dPhi_dr_Hernquist">[docs]</a>
+<span class="k">def</span> <span class="nf">dPhi_dr_Hernquist</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; The derivative of the gravitational potential for the Hernquist model.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r: array (or scalar)</span>
+<span class="sd">         radial coordinate of particle</span>
+<span class="sd">    params: array</span>
+<span class="sd">        the parameters to be used in the potential.</span>
+<span class="sd">     </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The derivative of the potential, evaluated at a radius r.</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Hernquist, L (1990).</span>
+<span class="sd">    .. [2] Binney, J., &amp; Tremaine, S. (2008). Galactic Dynamics (2nd ed.). Princeton University Press</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># total mass</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># scale length</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="c1"># Gravitational constant</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">G</span><span class="o">*</span><span class="n">M</span><span class="o">/</span><span class="n">b</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">r</span><span class="o">/</span><span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">tropygal.potentials</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Leandro Beraldo e Silva.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

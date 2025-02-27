@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Entropy estimates in the Hernquist potential &#8212; tropygal 0.1.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=87629129" />
+    <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <script src="_static/documentation_options.js?v=a58bc63e"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API reference" href="reference.html" />
+    <link rel="prev" title="Entropy estimates in the isochrone potential" href="tutorial_isochrone.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="reference.html" title="API reference"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorial_isochrone.html" title="Entropy estimates in the isochrone potential"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tutorials.html" accesskey="U">Tutorials</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Entropy estimates in the Hernquist potential</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="Entropy-estimates-in-the-Hernquist-potential">
+<h1>Entropy estimates in the Hernquist potential<a class="headerlink" href="#Entropy-estimates-in-the-Hernquist-potential" title="Link to this heading">¶</a></h1>
+<p>Here we estimate the entropy of samples in the Hernquist potential (<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/1990ApJ...356..359H/abstract">Hernquist 1990</a>), and plot it as a function of time while integrating orbits for these samples - see the Introduction for the general expressions. This is almost identical to the tutorial for the Isochrone potential, except that the Isochrone has an analytical expression for the period of radial oscillations <span class="math notranslate nohighlight">\(T_r(E,L)\)</span>, where <span class="math notranslate nohighlight">\(E\)</span> is energy and
+<span class="math notranslate nohighlight">\(L\)</span> is angular momentum, while the Hernquist model doesn’t have that (as far as I know). This impacts the calculation of the density of states <span class="math notranslate nohighlight">\(g(E,L)\)</span> when we assume the DF to be a function <span class="math notranslate nohighlight">\(f(E,L)\)</span> of energy and angular momentum.</p>
+<p>The expression for the density of states is</p>
+<p><span class="math notranslate nohighlight">\(g(E,L) = 8 \pi^2 L T_r(E,L)\)</span>,</p>
+<p>where</p>
+<p><span class="math notranslate nohighlight">\(T_r(E, L) = 2\int_{r_\mathrm{per}}^{r_\mathrm{apo}} \frac{\mathrm{d}r}{\sqrt{2\left[ E - \phi(r)\right] - L^2/r^2}}\)</span>.</p>
+<p>Below we use the routine <code class="docutils literal notranslate"><span class="pre">tropygal.gEL_Spherical</span></code>, which calculates <span class="math notranslate nohighlight">\(T_r(E, L)\)</span> numerically, while in the Isochrone case that is calculated analytically with <code class="docutils literal notranslate"><span class="pre">tropygal.gEL_Isochrone</span></code>. The numerical calculation of <span class="math notranslate nohighlight">\(T_r(E, L)\)</span> in <span class="math notranslate nohighlight">\(\texttt{tropygal}\)</span> is much simpler and not as optimized as e.g. in <span class="math notranslate nohighlight">\(\texttt{agama}\)</span>, but it serves for simple applications.</p>
+<p>We estimate the entropies for self-consistent and non-stationary samples. In the self-consistent case, we compare the estimates with the true entropy calculated with analytical expressions for <span class="math notranslate nohighlight">\(f(E)\)</span> and <span class="math notranslate nohighlight">\(g(E)\)</span> of the Hernquist model. The orbit integration, sampling from a DF and action calculations use the <a class="reference external" href="https://github.com/GalacticDynamics-Oxford/Agama">agama</a> package, but you may prefer other packages, such as <a class="reference external" href="http://gala.adrian.pw/en/latest/">gala</a> or
+<a class="reference external" href="https://www.galpy.org/">galpy</a>. Of course, the entropy estimate itself does not depend on how the data were generated.</p>
+<p>We estimate the entropy of the DF <span class="math notranslate nohighlight">\(f(\vec{w})\)</span>, where <span class="math notranslate nohighlight">\(\vec{w} = (\vec{r}, \vec{v})\)</span> are the 6D phase-space coordinates:</p>
+<p><span class="math notranslate nohighlight">\(S \equiv -\int f(\vec{w})\ln\left(\frac{f}{\mu}\right)\, \mathrm{d}^6\vec{w} = -\int f'(\vec{w}')\ln f'\, \mathrm{d}^6\vec{w}'\)</span>,</p>
+<p>where <span class="math notranslate nohighlight">\(\mu = |\Sigma|^{-1}\)</span>, <span class="math notranslate nohighlight">\(|\Sigma|\)</span> is the product of the dispersions in each of the coordinates, and <span class="math notranslate nohighlight">\(f'(\vec{w}') = |\Sigma|f(\vec{w})\)</span> is the DF of the coordinates normalized by their dispersions - see the Introduction.</p>
+<p>Assuming that <span class="math notranslate nohighlight">\(f(\vec{w})\)</span> is a function of integrals <span class="math notranslate nohighlight">\(\vec{I}\)</span> only, e.g. <span class="math notranslate nohighlight">\(f=f(E)\)</span>, <span class="math notranslate nohighlight">\(f = f(E,L)\)</span>, or <span class="math notranslate nohighlight">\(f = f(\vec{J})\)</span> (all valid assumptions for the self-consistent sample of the Hernquist model), with the appropriate change of variables we obtain in general</p>
+<p><span class="math notranslate nohighlight">\(S_{\vec{I}} = -\int F(\vec{I}) \ln\left( \frac{|\Sigma|F(\vec{I})}{g(\vec{I})}\right)\, \mathrm{d}\vec{I}\)</span>,</p>
+<p>where <span class="math notranslate nohighlight">\(g(\vec{I})\)</span> is the density of states – see Appendix A of <a class="reference external" href="https://arxiv.org/abs/2407.07947">Beraldo e Silva et al (2024)</a> for details. Note that <span class="math notranslate nohighlight">\(S_{\vec{I}}\)</span> is not “the entropy in the space of integrals” but, instead, <span class="math notranslate nohighlight">\(S_{\vec{I}} = S(f)\)</span> if one can assume that the DF is <span class="math notranslate nohighlight">\(f = f(\vec{I})\)</span>, which is true for stationary samples (Jeans’ theorem).</p>
+<p>In case the computation of <span class="math notranslate nohighlight">\(g(E,L)\)</span> is too slow because <span class="math notranslate nohighlight">\(T_r(E, L)\)</span> is calculated numerically with a simple routine (it takes a few minutes in my laptop), you can use your prefered galactic dynamics package for that (e.g. agama, galpy or gala), which may calculate <span class="math notranslate nohighlight">\(T_r(E, L)\)</span> faster.</p>
+<p>We start importing the relevant modules and setting some parameters for prettier plots. We use agama to generate samples, integrate orbits and calculate actions, but any other libray could be used instead.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import modules</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">integrate</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">agama</span>
+<span class="kn">import</span> <span class="nn">tropygal</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="kn">import</span> <span class="n">ScalarFormatter</span><span class="p">,</span> <span class="n">NullFormatter</span>
+
+<span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;axes.labelsize&#39;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span> <span class="s1">&#39;xtick.labelsize&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+          <span class="s1">&#39;xtick.direction&#39;</span><span class="p">:</span> <span class="s1">&#39;in&#39;</span><span class="p">,</span> <span class="s1">&#39;xtick.major.size&#39;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span>
+          <span class="s1">&#39;xtick.bottom&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;xtick.top&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ytick.labelsize&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+          <span class="s1">&#39;ytick.direction&#39;</span><span class="p">:</span> <span class="s1">&#39;in&#39;</span><span class="p">,</span><span class="s1">&#39;ytick.major.size&#39;</span><span class="p">:</span> <span class="mf">8.0</span><span class="p">,</span><span class="s1">&#39;ytick.left&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s1">&#39;ytick.right&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span><span class="s1">&#39;text.usetex&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;lines.linewidth&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s1">&#39;axes.titlesize&#39;</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span> <span class="s1">&#39;font.family&#39;</span><span class="p">:</span> <span class="s1">&#39;serif&#39;</span><span class="p">}</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.dpi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">columnwidth</span> <span class="o">=</span> <span class="mf">240.</span><span class="o">/</span><span class="mf">72.27</span>
+<span class="n">textwidth</span> <span class="o">=</span> <span class="mf">504.0</span><span class="o">/</span><span class="mf">72.27</span>
+
+<span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="o">%</span><span class="k">config</span> InlineBackend.figure_format = &#39;retina&#39;
+</pre></div>
+</div>
+</div>
+<section id="Set-constants">
+<h2>Set constants<a class="headerlink" href="#Set-constants" title="Link to this heading">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Mass and scale radius for the Hernquist potential:</span>
+<span class="n">M</span> <span class="o">=</span> <span class="mf">1.</span>
+<span class="n">b</span> <span class="o">=</span> <span class="mf">1.</span>
+<span class="n">_G</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">_G</span><span class="p">])</span>
+
+<span class="n">n_steps</span> <span class="o">=</span> <span class="mi">100</span> <span class="c1"># number of time steps in the orbit integration (and at which the entropy is estimated)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Define-functions-for-true-entropy-of-self-consistent-sample">
+<h2>Define functions for true entropy of self-consistent sample<a class="headerlink" href="#Define-functions-for-true-entropy-of-self-consistent-sample" title="Link to this heading">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Analytical expressions for DF of self-consistent Hernquist model:</span>
+<span class="k">def</span> <span class="nf">F_E</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="p">):</span>
+    <span class="n">f_E</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">DF_Hernquist</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">G</span><span class="p">)</span>
+    <span class="n">g_E</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">g_Hernquist</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">G</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">f_E</span><span class="o">*</span><span class="n">g_E</span> <span class="c1"># F(E) = f(E)g(E)</span>
+<span class="c1">#-----------------</span>
+<span class="k">def</span> <span class="nf">S_E_true_integrand</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">G</span><span class="p">):</span>
+    <span class="c1"># Integrand for calculation of true entropy</span>
+    <span class="c1"># F(E) = f(E) * g(E)</span>
+    <span class="c1"># it returns F(E) * ln(F(E)/mu(E)), and mu(E) = |Sigma|^(-1) * g(E)</span>
+    <span class="n">f_E</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">DF_Hernquist</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">F_E</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">f_E</span><span class="o">/</span><span class="n">mu</span><span class="p">)</span> <span class="c1"># externally, mu is set to |Sigma|^(-1)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Check-normalization-of-F(E)">
+<h2>Check normalization of F(E)<a class="headerlink" href="#Check-normalization-of-F(E)" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">E_I_min</span> <span class="o">=</span> <span class="o">-</span><span class="n">M</span><span class="o">*</span><span class="n">_G</span><span class="o">/</span><span class="n">b</span> <span class="c1"># Minimum of potential</span>
+<span class="n">E_I_max</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e-6</span>
+
+<span class="n">norm</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">F_E</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">E_I_min</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">E_I_max</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">_G</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;norm of F(E):&#39;</span><span class="p">,</span> <span class="n">norm</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+norm of F(E): 0.9999968005534102
+</pre></div></div>
+</div>
+</section>
+<section id="Entropy-estimates">
+<h2>Entropy estimates<a class="headerlink" href="#Entropy-estimates" title="Link to this heading">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set params and initialize arrays:</span>
+
+<span class="n">n_orbs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">N</span><span class="p">)</span> <span class="k">for</span> <span class="n">N</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">1e+4</span><span class="p">,</span> <span class="mf">1e+5</span><span class="p">,</span> <span class="mf">1e+6</span><span class="p">]]</span>
+<span class="c1"># For the plots:</span>
+<span class="n">N_label</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;10k&#39;</span><span class="p">,</span> <span class="s1">&#39;100k&#39;</span><span class="p">,</span> <span class="s1">&#39;1m&#39;</span><span class="p">]</span>
+<span class="n">N_label_plot</span> <span class="o">=</span> <span class="p">[</span><span class="sa">r</span><span class="s1">&#39;$10^4$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$10^5$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$10^6$&#39;</span><span class="p">]</span>
+<span class="n">N_colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">]</span>
+
+<span class="n">S_E_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+<span class="n">Tcirc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="c1"># mean circular period for each sample</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">n_steps</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="c1"># time in the orbit integration</span>
+
+<span class="n">S_6D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">n_steps</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="c1"># Entropy evaluated in 6D</span>
+<span class="c1"># Entropies assuming the DF is f = f(E), or f = f(E,L), or f = f(J)</span>
+<span class="c1"># These should be the same as S_6D if f = f(E), or f = f(E,L), or f = f(J)</span>
+<span class="n">S_E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<span class="n">S_EL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<span class="n">S_J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#-------------</span>
+<span class="n">agama</span><span class="o">.</span><span class="n">setUnits</span><span class="p">()</span>
+<span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;Agama used to generate initial samples, integrate orbits and estimate actions; agama.G:&#39;</span><span class="p">,</span> <span class="n">agama</span><span class="o">.</span><span class="n">G</span><span class="p">)</span>
+<span class="c1"># Potential and DF (using agama)</span>
+<span class="c1"># This creates an Hernquist potential of a given mass and scale radius:</span>
+<span class="n">hern_pot</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">Potential</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;Dehnen&#39;</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="n">M</span><span class="p">,</span> <span class="n">scaleRadius</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># This creates a DF of a self-consistent sample:</span>
+<span class="n">hern_df</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">DistributionFunction</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;QuasiSpherical&#39;</span><span class="p">,</span> <span class="n">potential</span><span class="o">=</span><span class="n">hern_pot</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="n">hern_pot</span><span class="p">)</span>
+<span class="c1"># This creates an action finder for the given potential:</span>
+<span class="n">actF</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">ActionFinder</span><span class="p">(</span><span class="n">hern_pot</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Agama used to generate initial samples, integrate orbits and estimate actions; agama.G: 1.0
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate samples, integrate and estimate entropy:</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">)):</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;-------------------------&#39;</span><span class="p">)</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;Generating sample...&#39;</span><span class="p">)</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">n_orbs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="c1"># Generate self-consistent sample of the Hernquist potential.</span>
+    <span class="c1"># Some care is needed here, since it&#39;s important to make sure the initial sample is really stationary in the potential.</span>
+    <span class="c1"># A constant entropy for this sample indicates that it is truly stationary - see plot below with the time evolution.</span>
+    <span class="c1"># If using agama, see option #define DISABLE_QRNG in src/math_sample.cpp, or in Makefile.local, which might need to be set before compilation</span>
+    <span class="n">data</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">GalaxyModel</span><span class="p">(</span><span class="n">hern_pot</span><span class="p">,</span> <span class="n">hern_df</span><span class="p">)</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="c1"># data, _ = hern_pot.sample(N, potential=hern_pot)</span>
+    <span class="c1">#------------------------------</span>
+    <span class="n">sigma_6D_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">)</span>
+
+    <span class="c1"># In principle, S_true shouldn&#39;t depend on the sample size, and could be calculated outside of this loop,</span>
+    <span class="c1"># But we are using mu = |Sigma|^(-1) to normalize the coordinates, with the exact |Sigma| changing for different samples,</span>
+    <span class="c1"># but |Sigma| converges for large samples</span>
+    <span class="n">S_E_true</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="n">S_E_true_integrand</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">E_I_min</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">E_I_max</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">_G</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_E (true):&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_E_true</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#------------------------------</span>
+    <span class="c1"># Estimate S_6D (at t=0; estimates over time are done below):</span>
+
+    <span class="n">S_6D</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">data</span><span class="o">/</span><span class="n">sigma_6D_0</span><span class="p">)</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_6D estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_6D</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#------------------</span>
+    <span class="c1"># Estimate S_E, i.e. assuming f = f(E):</span>
+
+    <span class="n">x</span>  <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">];</span> <span class="n">y</span>  <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">];</span> <span class="n">z</span>  <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">vx</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">3</span><span class="p">];</span> <span class="n">vy</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">4</span><span class="p">];</span> <span class="n">vz</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">5</span><span class="p">]</span>
+
+    <span class="n">v2</span> <span class="o">=</span> <span class="n">vx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">vy</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">vz</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">hern_pot</span><span class="o">.</span><span class="n">potential</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">v2</span>
+    <span class="n">sigma_E</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+
+    <span class="n">g_E</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">g_Hernquist</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">G</span><span class="o">=</span><span class="n">_G</span><span class="p">)</span>
+    <span class="c1"># It&#39;s convenient to normalize coordinates in the space where the entropy is estimated,</span>
+    <span class="c1"># but we want to stick to the entropy definition we used before, so the normalized coordinates are passed as the data,</span>
+    <span class="c1"># and mu takes care of the appropriate factors in the change of variables for the integral defining the entropy to be the same.</span>
+    <span class="n">S_E</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">E</span><span class="o">/</span><span class="n">sigma_E</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span> <span class="n">g_E</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sigma_E</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">)))</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_E estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_E</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#-------------------------</span>
+    <span class="c1"># Estimate S_EL, i.e. assuming f = f(E,L):</span>
+
+    <span class="n">Lx</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="o">*</span><span class="n">vz</span> <span class="o">-</span> <span class="n">z</span><span class="o">*</span><span class="n">vy</span><span class="p">)</span>
+    <span class="n">Ly</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="o">*</span><span class="n">vx</span> <span class="o">-</span> <span class="n">x</span><span class="o">*</span><span class="n">vz</span><span class="p">)</span>
+    <span class="n">Lz</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="n">vy</span> <span class="o">-</span> <span class="n">y</span><span class="o">*</span><span class="n">vx</span><span class="p">)</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Lx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Ly</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Lz</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">EL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+    <span class="n">sigma_L</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+    <span class="n">sigma_EL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sigma_E</span><span class="p">,</span> <span class="n">sigma_L</span><span class="p">])</span>
+
+    <span class="n">g_EL</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">gEL_Spherical</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">Phi_Hernquist</span><span class="p">,</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">dPhi_dr_Hernquist</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+    <span class="n">S_EL</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">EL</span><span class="o">/</span><span class="n">sigma_EL</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span> <span class="n">g_EL</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_EL</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">))</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_EL estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_EL</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#------------------------------</span>
+    <span class="c1"># Estimate S_J, i.e. assuming f = f(J):</span>
+
+    <span class="n">J</span> <span class="o">=</span> <span class="n">actF</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">actions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frequencies</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">angles</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">sigma_J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">J</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+    <span class="n">S_J</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">J</span><span class="o">/</span><span class="n">sigma_J</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span> <span class="p">((</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_J</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">))</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_J estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_J</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#------------------------------</span>
+    <span class="c1"># Estimate S_6D at different times</span>
+
+    <span class="c1"># define integration time (same for all orbits):</span>
+    <span class="n">Tcirc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">hern_pot</span><span class="o">.</span><span class="n">Tcirc</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">int_time</span> <span class="o">=</span> <span class="mi">50</span><span class="o">*</span><span class="n">Tcirc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">delta_t</span> <span class="o">=</span> <span class="n">int_time</span><span class="o">/</span><span class="n">n_steps</span>
+    <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">):</span>
+        <span class="c1"># Integrate orbits for one time-step:</span>
+        <span class="n">orbs</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">orbit</span><span class="p">(</span><span class="n">potential</span><span class="o">=</span><span class="n">hern_pot</span><span class="p">,</span> <span class="n">ic</span> <span class="o">=</span> <span class="n">data</span><span class="p">,</span> <span class="n">time</span> <span class="o">=</span> <span class="n">delta_t</span><span class="p">,</span> <span class="n">trajsize</span> <span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta_t</span>
+        <span class="n">all_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">orbs</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+        <span class="c1"># update data with new coords:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">all_coords</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span>
+        <span class="n">sigma_6D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+        <span class="c1"># Here we re-normalize again at every time-step (to facilitate the estimate),</span>
+        <span class="c1"># &quot;compensating&quot; for that in the mu factor, i.e. making an appropriate change of variables every time-step:</span>
+        <span class="n">S_6D</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">data</span><span class="o">/</span><span class="n">sigma_6D</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="o">%</span><span class="k">10</span>==0):
+            <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;j:&#39;</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="s1">&#39;S_6D estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_6D</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+-------------------------
+Generating sample...
+S_E (true): 9.07381
+S_6D estimated: 9.54155
+S_E estimated: 9.07106
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/ln/7t1_bznj4l9cj5_59_yk0y640000gt/T/ipykernel_10739/120888349.py:20: IntegrationWarning: The integral is probably divergent, or slowly convergent.
+  S_E_true[i] = -integrate.quad(S_E_true_integrand, a=E_I_min, b=E_I_max, args=(M, b, mu, _G))[0]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+S_EL estimated: 9.10449
+S_J estimated: 9.0869
+j: 10 S_6D estimated: 9.53912
+j: 20 S_6D estimated: 9.5351
+j: 30 S_6D estimated: 9.54301
+j: 40 S_6D estimated: 9.55713
+j: 50 S_6D estimated: 9.57169
+j: 60 S_6D estimated: 9.56425
+j: 70 S_6D estimated: 9.56394
+j: 80 S_6D estimated: 9.58931
+j: 90 S_6D estimated: 9.55079
+-------------------------
+Generating sample...
+S_E (true): 9.03025
+S_6D estimated: 9.34829
+S_E estimated: 9.03523
+S_EL estimated: 9.03992
+S_J estimated: 9.05359
+j: 10 S_6D estimated: 9.34344
+j: 20 S_6D estimated: 9.35426
+j: 30 S_6D estimated: 9.35587
+j: 40 S_6D estimated: 9.3497
+j: 50 S_6D estimated: 9.35109
+j: 60 S_6D estimated: 9.35674
+j: 70 S_6D estimated: 9.34634
+j: 80 S_6D estimated: 9.34868
+j: 90 S_6D estimated: 9.3463
+-------------------------
+Generating sample...
+S_E (true): 9.02568
+S_6D estimated: 9.22986
+S_E estimated: 9.02616
+S_EL estimated: 9.03057
+S_J estimated: 9.03697
+j: 10 S_6D estimated: 9.22945
+j: 20 S_6D estimated: 9.23158
+j: 30 S_6D estimated: 9.23207
+j: 40 S_6D estimated: 9.23172
+j: 50 S_6D estimated: 9.22852
+j: 60 S_6D estimated: 9.23074
+j: 70 S_6D estimated: 9.23063
+j: 80 S_6D estimated: 9.23194
+j: 90 S_6D estimated: 9.22885
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calc errors</span>
+<span class="n">err_S_6D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">))</span>
+<span class="n">err_S_E</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">))</span>
+<span class="n">err_S_EL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">))</span>
+<span class="n">err_S_J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">))</span>
+<span class="c1">#-------------------</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">)):</span>
+    <span class="c1"># Calculate error with the time-average of S_6D, in respect to the true value:</span>
+    <span class="n">err_S_6D</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">S_6D</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">err_S_E</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">S_E</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">err_S_EL</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">S_EL</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">err_S_J</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">S_J</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;N:&#39;</span><span class="p">,</span> <span class="n">n_orbs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="s1">&#39;S_E_true:&#39;</span><span class="p">,</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;err S_J:&#39;</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">S_J</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+N: 10000 S_E_true: 9.02567953334228 err S_J: 0.061224351338196925
+N: 100000 S_E_true: 9.02567953334228 err S_J: 0.027905902981309794
+N: 1000000 S_E_true: 9.02567953334228 err S_J: 0.011293482930074816
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">14</span><span class="p">))</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Hernquist Model (self-consistent)&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Relative error (bias)&#39;</span><span class="p">)</span>
+
+<span class="n">ones</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">)):</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">S_6D</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">N_label_plot</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="c1"># Assumption-free estimate</span>
+    <span class="c1">#axs[0].plot(t[i]/Tcirc[i], S_E[i]*ones, ls=&#39;--&#39;, dashes=(8,5), lw=2, c=N_colors[i]) # Assuming the DF is an unknown f = f(E)</span>
+    <span class="c1">#axs[0].plot(t[i]/Tcirc[i], S_EL[i]*ones, ls=&#39;--&#39;, dashes=(8,5), lw=2, c=N_colors[i]) # Assuming the DF is an unknown f = f(E,L)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">S_J</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">ones</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="c1"># Assuming the DF is an unknown f = f(J)</span>
+
+<span class="c1"># To have two legends:</span>
+<span class="n">l1</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+
+<span class="n">p1</span><span class="p">,</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">S_6D</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">p2</span><span class="p">,</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">S_J</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">ones</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">p3</span><span class="p">,</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">ones</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="n">p3</span><span class="p">],</span> <span class="p">[</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_\mathrm</span><span class="si">{6D}</span><span class="s1">$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_{\vec</span><span class="si">{J}</span><span class="s1">}$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$S_{\mathrm{E, true}}$&#39;</span><span class="p">],</span>
+              <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+<span class="c1"># Add l1 as a separate artist to the axes</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_artist</span><span class="p">(</span><span class="n">l1</span><span class="p">)</span>
+<span class="c1">#----------------</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">err_S_6D</span><span class="p">),</span><span class="s1">&#39;h-&#39;</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">mec</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_\mathrm</span><span class="si">{6D}</span><span class="s1">$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">err_S_J</span><span class="p">),</span> <span class="s1">&#39;^--&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">mec</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_{\vec</span><span class="si">{J}</span><span class="s1">}$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">err_S_EL</span><span class="p">),</span> <span class="s1">&#39;x-.&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">mec</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_\mathrm</span><span class="si">{EL}</span><span class="s1">$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">err_S_E</span><span class="p">),</span> <span class="s1">&#39;.:&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">mec</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_\mathrm</span><span class="si">{E}</span><span class="s1">$&#39;</span><span class="p">)</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">26</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;lower left&#39;</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="c1">#---------------------</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$t/T_\mathrm</span><span class="si">{circ}</span><span class="s1">$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">9.</span><span class="p">,</span><span class="mf">10.2</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$N$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">,</span><span class="mf">1e-1</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$|\delta S|/S_{\mathrm{E, true}}$&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/tutorial_Hernquist_14_0.png" class="no-scaled-link" src="_images/tutorial_Hernquist_14_0.png" style="width: 473px; height: 834px;" />
+</div>
+</div>
+</section>
+<section id="Evolve-initial-sample-in-new-potential">
+<h2>Evolve initial sample in new potential<a class="headerlink" href="#Evolve-initial-sample-in-new-potential" title="Link to this heading">¶</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">M_new</span> <span class="o">=</span> <span class="mf">3.</span> <span class="c1"># mass of new potential (where we integrate orbits for a non-stationary sample)</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">M_new</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">_G</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set params and initialize arrays:</span>
+
+<span class="n">Tcirc_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="c1"># mean circular period for each sample</span>
+<span class="n">t_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">n_steps</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="c1"># time in the orbit integration</span>
+<span class="n">S_6D_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">n_steps</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="c1"># Entropy evaluated in 6D</span>
+
+<span class="c1"># Entropies assuming the DF is f = f(E,L), or f = f(J) - now only expected to be valid after the system phase-mixes</span>
+<span class="c1"># These should be the same as S_6D if f = f(E,L), or f = f(J). In the current case, this happens at the late times only.</span>
+
+<span class="n">S_EL_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<span class="n">S_J_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+<span class="c1"># new Potential:</span>
+<span class="n">hern_pot_new</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">Potential</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;Dehnen&#39;</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="n">M_new</span><span class="p">,</span> <span class="n">scaleRadius</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># Action finder in the new potential:</span>
+<span class="n">actF_new</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">ActionFinder</span><span class="p">(</span><span class="n">hern_pot_new</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Same as before, but generating sample stationary in the potential with mass M=1, and evolving it in a potential with mass M=3.</span>
+<span class="c1"># Generate samples, integrate and estimate entropy:</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">)):</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;-------------------------&#39;</span><span class="p">)</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;Generating sample...&#39;</span><span class="p">)</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">n_orbs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">data</span><span class="p">,</span><span class="n">_</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">GalaxyModel</span><span class="p">(</span><span class="n">hern_pot</span><span class="p">,</span> <span class="n">hern_df</span><span class="p">)</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+    <span class="c1"># data, _ = hern_pot.sample(N, potential=hern_pot)</span>
+    <span class="n">sigma_6D_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+    <span class="c1">#------------------------------</span>
+    <span class="c1"># Estimate S_6D (at t=0; estimates over time are done below):</span>
+
+    <span class="n">S_6D_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">data</span><span class="o">/</span><span class="n">sigma_6D_0</span><span class="p">)</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_6D estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_6D_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#------------------</span>
+    <span class="c1"># Estimate S_EL, i.e. assuming f = f(E,L):</span>
+
+    <span class="n">x</span>  <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">];</span> <span class="n">y</span>  <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">];</span> <span class="n">z</span>  <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">vx</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">3</span><span class="p">];</span> <span class="n">vy</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">4</span><span class="p">];</span> <span class="n">vz</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">5</span><span class="p">]</span>
+
+    <span class="n">v2</span> <span class="o">=</span> <span class="n">vx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">vy</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">vz</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">hern_pot_new</span><span class="o">.</span><span class="n">potential</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">v2</span>
+    <span class="n">sigma_E</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+
+    <span class="n">Lx</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="o">*</span><span class="n">vz</span> <span class="o">-</span> <span class="n">z</span><span class="o">*</span><span class="n">vy</span><span class="p">)</span>
+    <span class="n">Ly</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="o">*</span><span class="n">vx</span> <span class="o">-</span> <span class="n">x</span><span class="o">*</span><span class="n">vz</span><span class="p">)</span>
+    <span class="n">Lz</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="n">vy</span> <span class="o">-</span> <span class="n">y</span><span class="o">*</span><span class="n">vx</span><span class="p">)</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Lx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Ly</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Lz</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">EL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+    <span class="n">sigma_L</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span>
+    <span class="n">sigma_EL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sigma_E</span><span class="p">,</span> <span class="n">sigma_L</span><span class="p">])</span>
+
+    <span class="n">g_EL</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">gEL_Spherical</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">Phi_Hernquist</span><span class="p">,</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">dPhi_dr_Hernquist</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+    <span class="c1"># It&#39;s convenient to normalize coordinates in the space where the entropy is estimated,</span>
+    <span class="c1"># but we want to stick to the entropy definition we used before, so the normalized coordinates are passed as the data,</span>
+    <span class="c1"># and mu takes care of the appropriate factors in the change of variables for the integral defining the entropy to be the same:</span>
+    <span class="n">S_EL_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">EL</span><span class="o">/</span><span class="n">sigma_EL</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span> <span class="n">g_EL</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_EL</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">))</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_EL estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_EL_new</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#------------------------------</span>
+    <span class="c1"># Estimate S_J, i.e. assuming f = f(J):</span>
+
+    <span class="n">J</span> <span class="o">=</span> <span class="n">actF_new</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">actions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frequencies</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">angles</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">sigma_J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">J</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+
+    <span class="n">S_J_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">J</span><span class="o">/</span><span class="n">sigma_J</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span> <span class="p">((</span><span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_J</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">))</span>
+    <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;S_J estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_J_new</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="mi">5</span><span class="p">))</span>
+    <span class="c1">#------------------------------</span>
+    <span class="c1"># Estimate S_6D at different times</span>
+
+    <span class="c1"># define integration time (same for all orbits):</span>
+    <span class="n">Tcirc_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">hern_pot_new</span><span class="o">.</span><span class="n">Tcirc</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="n">int_time</span> <span class="o">=</span> <span class="mi">50</span><span class="o">*</span><span class="n">Tcirc_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">delta_t</span> <span class="o">=</span> <span class="n">int_time</span><span class="o">/</span><span class="n">n_steps</span>
+    <span class="n">t_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">):</span>
+        <span class="c1"># Integrate orbits for one time-step:</span>
+        <span class="n">orbs</span> <span class="o">=</span> <span class="n">agama</span><span class="o">.</span><span class="n">orbit</span><span class="p">(</span><span class="n">potential</span><span class="o">=</span><span class="n">hern_pot_new</span><span class="p">,</span> <span class="n">ic</span> <span class="o">=</span> <span class="n">data</span><span class="p">,</span> <span class="n">time</span> <span class="o">=</span> <span class="n">delta_t</span><span class="p">,</span> <span class="n">trajsize</span> <span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">t_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta_t</span>
+        <span class="n">all_coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">orbs</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+        <span class="c1"># update data with new coords:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">all_coords</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span>
+
+        <span class="n">sigma_6D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">])</span>
+        <span class="c1"># Here we re-normalize again at every time-step (to facilitate the estimate),</span>
+        <span class="c1"># &quot;compensating&quot; for that in the mu factor, i.e. making an appropriate change of variables every time-step:</span>
+        <span class="n">S_6D_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">tropygal</span><span class="o">.</span><span class="n">entropy</span><span class="p">(</span><span class="n">data</span><span class="o">/</span><span class="n">sigma_6D</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">sigma_6D_0</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">j</span><span class="o">%</span><span class="k">10</span>==0):
+            <span class="nb">print</span> <span class="p">(</span><span class="s1">&#39;j:&#39;</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="s1">&#39;S_6D estimated:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">S_6D_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+-------------------------
+Generating sample...
+S_6D estimated: 9.5417
+S_EL estimated: 9.67862
+S_J estimated: 9.6753
+j: 10 S_6D estimated: 10.24019
+j: 20 S_6D estimated: 10.23615
+j: 30 S_6D estimated: 10.19846
+j: 40 S_6D estimated: 10.18675
+j: 50 S_6D estimated: 10.1849
+j: 60 S_6D estimated: 10.21141
+j: 70 S_6D estimated: 10.19851
+j: 80 S_6D estimated: 10.18999
+j: 90 S_6D estimated: 10.20155
+-------------------------
+Generating sample...
+S_6D estimated: 9.34215
+S_EL estimated: 9.62456
+S_J estimated: 9.61904
+j: 10 S_6D estimated: 9.961
+j: 20 S_6D estimated: 9.96876
+j: 30 S_6D estimated: 9.96022
+j: 40 S_6D estimated: 9.96157
+j: 50 S_6D estimated: 9.95149
+j: 60 S_6D estimated: 9.94794
+j: 70 S_6D estimated: 9.95913
+j: 80 S_6D estimated: 9.94617
+j: 90 S_6D estimated: 9.94957
+-------------------------
+Generating sample...
+S_6D estimated: 9.22334
+S_EL estimated: 9.60687
+S_J estimated: 9.60955
+j: 10 S_6D estimated: 9.7835
+j: 20 S_6D estimated: 9.82679
+j: 30 S_6D estimated: 9.83625
+j: 40 S_6D estimated: 9.83992
+j: 50 S_6D estimated: 9.83808
+j: 60 S_6D estimated: 9.83622
+j: 70 S_6D estimated: 9.8335
+j: 80 S_6D estimated: 9.83224
+j: 90 S_6D estimated: 9.83134
+</pre></div></div>
+</div>
+</section>
+<section id="Plot">
+<h2>Plot<a class="headerlink" href="#Plot" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">14</span><span class="p">))</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Hernquist Model: $M_\mathrm</span><span class="si">{ini}</span><span class="s1">=1$; $M_\mathrm</span><span class="si">{pot}</span><span class="s1">=3$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Entropy variation&#39;</span><span class="p">)</span>
+
+<span class="n">ones</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_steps</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">S_EL_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="c1">#, label=r&#39;$S_{EL}$&#39;)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">)):</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc_new</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">S_6D_new</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc_new</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">S_J_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">ones</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="n">p4</span><span class="p">,</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">S_EL_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">ones</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="n">p4</span><span class="p">],</span> <span class="p">[</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_\mathrm</span><span class="si">{6D}</span><span class="s1">$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_{\vec</span><span class="si">{J}</span><span class="s1">}$&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_{\mathrm{EL, true}}$&#39;</span><span class="p">],</span>
+              <span class="n">loc</span> <span class="o">=</span> <span class="s1">&#39;lower left&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+<span class="c1">#---------------------</span>
+<span class="c1"># inset axes:</span>
+<span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="mi">35</span><span class="p">,</span> <span class="mf">49.5</span><span class="p">,</span> <span class="mf">9.595</span><span class="p">,</span> <span class="mf">9.665</span>  <span class="c1"># subregion of the original image</span>
+<span class="n">axins</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">([</span><span class="mf">0.51</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.43</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span>
+    <span class="n">xlim</span><span class="o">=</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">),</span> <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">),</span> <span class="n">xticklabels</span><span class="o">=</span><span class="p">[])</span><span class="c1">#, yticklabels=[])</span>
+<span class="n">axins</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">S_EL_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">)):</span>
+    <span class="n">axins</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc_new</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">S_J_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">ones</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">dashes</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">indicate_inset_zoom</span><span class="p">(</span><span class="n">axins</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
+<span class="c1">#---------------------</span>
+<span class="c1"># We take the final S_EL (estimated with the largest sample) as the true final S_EL:</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">S_EL_new</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">S_E_true</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+               <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\Delta S_\mathrm</span><span class="si">{true}</span><span class="s1"> = \hat</span><span class="si">{S}</span><span class="s1">_{\mathrm{EL, true}} - S_{\mathrm{E, true}}$&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_orbs</span><span class="p">)):</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">Tcirc_new</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">S_6D_new</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">S_6D_new</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">N_colors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">N_label_plot</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="c1"># Plotting Delta S</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">9.0</span><span class="p">,</span> <span class="mf">10.2</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\hat</span><span class="si">{S}</span><span class="s1">_\mathrm</span><span class="si">{6D}</span><span class="s1">(t) - \hat</span><span class="si">{S}</span><span class="s1">_\mathrm</span><span class="si">{6D}</span><span class="s1">(0)$&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$t/T_\mathrm</span><span class="si">{circ}</span><span class="s1">$&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/tutorial_Hernquist_20_0.png" class="no-scaled-link" src="_images/tutorial_Hernquist_20_0.png" style="width: 473px; height: 834px;" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Entropy estimates in the Hernquist potential</a><ul>
+<li><a class="reference internal" href="#Set-constants">Set constants</a></li>
+<li><a class="reference internal" href="#Define-functions-for-true-entropy-of-self-consistent-sample">Define functions for true entropy of self-consistent sample</a></li>
+<li><a class="reference internal" href="#Check-normalization-of-F(E)">Check normalization of F(E)</a></li>
+<li><a class="reference internal" href="#Entropy-estimates">Entropy estimates</a></li>
+<li><a class="reference internal" href="#Evolve-initial-sample-in-new-potential">Evolve initial sample in new potential</a></li>
+<li><a class="reference internal" href="#Plot">Plot</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="tutorial_isochrone.html"
+                          title="previous chapter">Entropy estimates in the isochrone potential</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="reference.html"
+                          title="next chapter">API reference</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/tutorial_Hernquist.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="reference.html" title="API reference"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorial_isochrone.html" title="Entropy estimates in the isochrone potential"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">tropygal 0.1.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="tutorials.html" >Tutorials</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Entropy estimates in the Hernquist potential</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Leandro Beraldo e Silva.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>
