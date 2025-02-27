@@ -3,3 +3,4 @@ nbsphinx
 nbsphinx==0.9.6
 nbconvert
 nbformat
+jupyter_client
