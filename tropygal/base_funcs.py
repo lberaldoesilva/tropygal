@@ -103,26 +103,37 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     tree = KDTree(data, leafsize=10) # default leafsize=10
     
     dist, ind = tree.query(data, k=k+1, workers=workers) # workers is number of threads. -1 means all threads; k+1 because the first is the particle itself
-    dist_kNN = dist[:,k]
-    
-    idx = np.where(dist_kNN > 0)[0]
-    N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero, very small compared to N)
-    
-    if (N_zero_dist > 0):
-        print ('tropygal:', N_zero_dist,' points with zero D_NN neglected')
-        N = N - N_zero_dist
 
-    ln_D = np.log(dist_kNN[idx])
+    # Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).
+    # In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN >0
+
+    dist_kNN = dist[:,k].copy()
+    idx_to_fix = np.where(dist_kNN == 0)[0]
+    if len(idx_to_fix) > 0: # Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)
+        #print ('tropygal:', len(idx_to_fix),' points with zero D_NN. Taking next neighbors until D_NN>0...')
+        # For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.
+        # In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N<10^7, k+15 should be enough:
+        max_k = min(k+15, N)  # Query up to k+15 neighbors, but not all points
+        dists_fixed, _ = tree.query(data[idx_to_fix], k=max_k+1, workers=workers)
+
+        # Find the first nonzero distance for each affected point
+        for i, dist_row in zip(idx_to_fix, dists_fixed):
+            nonzero_NN = dist_row[dist_row > 0]  # Ignore self-matches (zero distances)
+            if len(nonzero_NN) > 0:
+                dist_kNN[i] = nonzero_NN[k-1]  # Take k-th first nonzero distance
+            else:
+                print ('tropygal: point', i, 'with no neighbor with D_NN>0 found.')
+
+    ln_D = np.log(dist_kNN)
+    
 #    ln_f = -np.log(N-1.) - np.euler_gamma - np.log(V_d(dim)) - dim*ln_D
 #    ln_f = -psi(N) + psi(k) - np.log(V_d(dim)) - dim*ln_D
     avg_ln_f = np.mean(-np.log(N-1.) + psi(k) - np.log(V_d(dim)) - dim*ln_D)
     avg_ln_mu = np.mean(np.log(mu))
 
     if (correct_bias==True):
-        data = data[idx] # consider only data points with positive distance to NN
-        dist_kNN = dist_kNN[idx]
         # The fraction of the volume around particle i inside the domain:
-        log_frac_vol = np.zeros(len(idx))
+        log_frac_vol = np.zeros(N)
         
         if (vol_correction=='cube'):
             if l_cube_over_d is None:
@@ -216,24 +227,32 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
     
     tree = KDTree(data2, leafsize=10) # default leafsize=10
     dist, ind = tree.query(data1, k=k+1, workers=workers) # workers is number of threads. -1 means all threads
-    dist_kNN = dist[:,k]
-    
-    idx = np.where(dist_kNN > 0)[0]
-    N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero,  very small compared to N)
-    
-    if (N_zero_dist > 0):
-        print ("tropygal:", N_zero_dist,' points with zero D_NN neglected')
-        N = N - N_zero_dist
 
-    ln_D = np.log(dist_kNN[idx])
+    dist_kNN = dist[:,k].copy()
+    idx_to_fix = np.where(dist_kNN == 0)[0]
+    if len(idx_to_fix) > 0: # Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)
+        #print ('tropygal:', len(idx_to_fix),' points with zero D_NN. Taking next neighbors until D_NN>0...')
+        # For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.
+        # In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N<10^7, k+15 should be enough:
+        max_k = min(k+15, N)  # Query up to k+15 neighbors, but not all points
+        dists_fixed, _ = tree.query(data1[idx_to_fix], k=max_k+1, workers=workers)
+
+        # Find the first nonzero distance for each affected point
+        for i, dist_row in zip(idx_to_fix, dists_fixed):
+            nonzero_NN = dist_row[dist_row > 0]  # Ignore self-matches (zero distances)
+            if len(nonzero_NN) > 0:
+                dist_kNN[i] = nonzero_NN[k-1]  # Take k-th first nonzero distance
+            else:
+                print ('tropygal: point', i, 'with no neighbor with D_NN>0 found.')
+
+    ln_D = np.log(dist_kNN)
+
     avg_ln_f = np.mean(-np.log(M) + psi(k) - np.log(V_d(dim)) - dim*ln_D)
     avg_ln_mu = np.mean(np.log(mu))
 
     if (correct_bias==True):
-        data1 = data1[idx] # consider only data points with positive distance to NN
-        dist_kNN = dist_kNN[idx]
         # The fraction of the volume around particle i inside the domain:
-        log_frac_vol = np.zeros(len(idx))
+        log_frac_vol = np.zeros(len(dist_kNN))
 
         if (vol_correction=='cube'):
             if l_cube_over_d is None:
@@ -331,17 +350,28 @@ def renyi_entropy(data, mu=1, q=2, k=1):
     
     tree = KDTree(data, leafsize=10) # default leafsize=10
     dist, ind = tree.query(data, k=k+1, workers=-1) # workers is number of threads. -1 means all threads
-    dist_kNN = dist[:,k]
-    
-    idx = np.where(dist_kNN > 0)[0]
-    N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero,  very small compared to N)
-    
-    if (N_zero_dist > 0):
-        print ('tropygal:', N_zero_dist,' points with zero D_NN neglected')
-        N = N - N_zero_dist
+
+    # Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).
+    # In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN >0
+    dist_kNN = dist[:,k].copy()
+    idx_to_fix = np.where(dist_kNN == 0)[0]
+    if len(idx_to_fix) > 0: # Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)
+        #print ('tropygal:', len(idx_to_fix),' points with zero D_NN. Taking next neighbors until D_NN>0...')
+        # For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.
+        # In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N<10^7, k+15 should be enough:
+        max_k = min(k+15, N)  # Query up to k+15 neighbors, but not all points
+        dists_fixed, _ = tree.query(data[idx_to_fix], k=max_k+1, workers=workers)
+
+        # Find the first nonzero distance for each affected point
+        for i, dist_row in zip(idx_to_fix, dists_fixed):
+            nonzero_NN = dist_row[dist_row > 0]  # Ignore self-matches (zero distances)
+            if len(nonzero_NN) > 0:
+                dist_kNN[i] = nonzero_NN[k-1]  # Take k-th first nonzero distance
+            else:
+                print ('tropygal: point', i, 'with no neighbor with D_NN>0 found.')
         
-    D = dist_kNN[idx]
-    f = 1./( (N-1) * C_k(q, k) * V_d(dim) * D**dim )
+    #D = dist_kNN[idx]
+    f = 1./( (N-1) * C_k(q, k) * V_d(dim) * dist_kNN**dim )
 
     return (1./(1-q))*np.log(np.mean((f/mu)**(q-1.)))
 #-----------------------------
@@ -395,16 +425,27 @@ def tsallis_entropy(data, mu=1, q=2, k=1):
     
     tree = KDTree(data, leafsize=10) # default leafsize=10
     dist, ind = tree.query(data, k=k+1, workers=-1) # workers is number of threads. -1 means all threads
-    dist_kNN = dist[:,k]
-    
-    idx = np.where(dist_kNN > 0)[0]
-    N_zero_dist = N - len(idx) # Number of points with zero distance (typically, if not zero,  very small compared to N)
-    
-    if (N_zero_dist > 0):
-        print ('tropygal:', N_zero_dist,' points with zero D_NN neglected')
-        N = N - N_zero_dist
+
+    # Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).
+    # In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN >0
+    dist_kNN = dist[:,k].copy()
+    idx_to_fix = np.where(dist_kNN == 0)[0]
+    if len(idx_to_fix) > 0: # Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)
+        #print ('tropygal:', len(idx_to_fix),' points with zero D_NN. Taking next neighbors until D_NN>0...')
+        # For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.
+        # In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N<10^7, k+15 should be enough:
+        max_k = min(k+15, N)  # Query up to k+15 neighbors, but not all points
+        dists_fixed, _ = tree.query(data[idx_to_fix], k=max_k+1, workers=workers)
+
+        # Find the first nonzero distance for each affected point
+        for i, dist_row in zip(idx_to_fix, dists_fixed):
+            nonzero_NN = dist_row[dist_row > 0]  # Ignore self-matches (zero distances)
+            if len(nonzero_NN) > 0:
+                dist_kNN[i] = nonzero_NN[k-1]  # Take k-th first nonzero distance
+            else:
+                print ('tropygal: point', i, 'with no neighbor with D_NN>0 found.')
         
-    D = dist_kNN[idx]
-    f = 1./( (N-1) * C_k(q, k) * V_d(dim) * D**dim )
+    #D = dist_kNN[idx]
+    f = 1./( (N-1) * C_k(q, k) * V_d(dim) * dist_kNN**dim )
 
     return (1./(q - 1))*( 1. - np.mean((f/mu)**(q-1.)))
