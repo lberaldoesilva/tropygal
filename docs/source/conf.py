@@ -14,7 +14,10 @@ release = '0.1.1'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx.ext.viewcode", "nbsphinx"]
+extensions = ["sphinx.ext.autodoc",
+              "sphinx.ext.napoleon",
+              "sphinx.ext.viewcode",
+              "nbsphinx"]
 
 nbsphinx_prolog = ""
 nbsphinx_epilog = ""

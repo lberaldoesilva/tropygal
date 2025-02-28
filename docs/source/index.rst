@@ -14,10 +14,3 @@ Welcome tropygal's documentation
    intro.rst
    Tutorials <tutorials.rst>
    API reference <reference.rst>
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

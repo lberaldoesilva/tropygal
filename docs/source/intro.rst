@@ -16,7 +16,7 @@ use :math:`\texttt{tropygal}`.
 Main expressions
 ----------------
 
-A convenient entropy definition is [#f1]_
+A convenient entropy definition is [1]_
 
 .. math:: S[f] \equiv - \int f(\vec{w}) \ln \left(\frac{f}{\mu}\right)
       \mathrm{d}^d\vec{w}
@@ -145,4 +145,4 @@ See the tutorials for more complete examples.
   
 .. rubric:: Footnotes
 
-.. [#f1] See specifically `https://en.wikipedia.org/wiki/Differential_entropy#Variants <https://en.wikipedia.org/wiki/Differential_entropy#Variants>`__.
+.. [1] See specifically `https://en.wikipedia.org/wiki/Differential_entropy#Variants <https://en.wikipedia.org/wiki/Differential_entropy#Variants>`__.
