@@ -2,14 +2,15 @@ Introduction
 ============
 
 :math:`\texttt{tropygal}` is a pure-python package for estimating the
-`differential entropy <https://en.wikipedia.org/wiki/Differential_entropy>`__
-of a probability distribution function (pdf) :math:`f(\vec{w})` in
-:math:`d`-dimensions, in the context of galactic dynamics.
-The entropy is estimated with a Monte Carlo method,
-i.e. using a sample of the underlying pdf,
-without assuming any specific form for :math:`f(\vec{w})`.
-The same estimators can also be used very broadly in other contexts.
-Detailed expressions and numerical tests can be found in `Beraldo e Silva et al (2024)
+`differential entropy
+<https://en.wikipedia.org/wiki/Differential_entropy>`__ of a
+probability distribution function (pdf) :math:`f(\vec{w})` in
+:math:`d`-dimensions in general and, in particular, in the context of
+galactic dynamics.  The entropy is estimated with a Monte Carlo
+method, i.e. using a sample of the underlying pdf, without assuming
+any specific form for :math:`f(\vec{w})`.  The same estimators can
+also be used very broadly in other contexts.  Detailed expressions and
+numerical tests can be found in `Beraldo e Silva et al (2024)
 <https://arxiv.org/abs/2407.07947>`__. Please cite this paper if you
 use :math:`\texttt{tropygal}`.
 
@@ -35,7 +36,7 @@ Given a size-:math:`N` sample of
 
 where :math:`\hat{f}_i` is the estimate of :math:`f(\vec{w})` at
 point/particle/star :math:`i`. In principle, any density estimate
-method can be used for :math:`\hat{f}_i`, but certain methods are
+method could be used for :math:`\hat{f}_i`, but certain methods are
 ideal to precisely estimate the entropy - see e.g. `Hall &
 Morton (1993) <https://rdcu.be/dXemG>`__, `Beirlant et al (2001)
 <http://jimbeck.caltech.edu/summerlectures/references/Entropy%20estimation.pdf>`__.
