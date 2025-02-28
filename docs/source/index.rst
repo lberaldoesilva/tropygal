@@ -8,7 +8,7 @@ Welcome tropygal's documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption:
+   :caption: Contents:
 
    Installation <installation.rst>
    intro.rst
