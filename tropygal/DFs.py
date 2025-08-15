@@ -5,23 +5,23 @@ from .potentials import Tr_Spherical
 
 #-----------------------------
 def DF_Isochrone(E, M, b, G=_G_gal):
-    """ Distribution Function (DF) of isochrone model - see Binney & Tremaine (2008), Eq. (4.54)
+    """ Distribution Function (DF) of isochrone model - see [1]_, Eq. (4.54).
     
     Parameters
     ----------
     E: float
-         energy
+       energy
     M: float
-         total mass
+       total mass
     b: float
-         scale lenght
+       scale lenght
     G: float
-         gravitational constant (standard value in kpc Msun^-1 (km/s)2)
+       gravitational constant (standard value in kpc Msun^-1 (km/s)2)
 
     Returns
     -------
     float
-      the DF
+       the DF
 
     References
     ----------
@@ -33,7 +33,7 @@ def DF_Isochrone(E, M, b, G=_G_gal):
             (27 - 66*e + 320*e**2 - 240*e**3 + 64*e**4 + 3*(16*e**2 + 28*e -9)*np.arcsin(np.sqrt(e))/np.sqrt(e*(1-e))))
 #------------------------
 def g_Isochrone(E, M, b, G=_G_gal):
-    """ The density of states for the isotropic isochrone model
+    """ The density of states for the isotropic isochrone model -- see [1]_.
     
     Parameters
     ----------

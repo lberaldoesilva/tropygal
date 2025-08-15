@@ -39,6 +39,132 @@ def V_d(dim):
     
     return np.pi**(dim/2.)/Gamma(dim/2. + 1)
 #-----------------------------
+# Leandro - Aug 12, 2025 - begin:
+def density(data, data_base=None, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
+    """
+    Estimate the density (pdf) for best use in NN entropy estimate.
+
+    f_i = 1/[ (M-1) * exp(-psi(k)) * V_d * D^d ], where:
+    M is size of sample building the tree
+    psi is the digamma function
+    V_d is the volume of unitary hypersphere in d-dimensions
+    D is the Euclidean distance to kth neighbor
+
+    Parameters
+    ----------
+    data: array [N, dim]
+       Data points to be queried
+    data_base: array [M, dim]
+       Data points of sample that will serve to build the tree, while previous data array is for the query points. If data_base is not provided, it's assumed that data_base = data and M = N
+    k: in number
+       kth nearest neighbor
+    correct_bias: Boolean
+       If correct for bias due to boundary effects as proposed by Charzynska & Gambin 2015
+    vol_correction: string
+       strategy for correction:
+       - 'cube': the support is assumed to be a paralelepiped, and the volume around each point is a cube
+    l_cube_over_d: float
+      Side of cube around each point divided by D, the distance to the k-neighbor.
+      A typically good choice is a cube inscribed in the sphere, i.e. side/D = 2/sqrt(dim). If None, this is set by default
+    workers: int (default: -1, meaning using all CPUs available).
+       Number of CPUs to be used to parallelize the seacrh for NNs.
+
+    Returns
+    -------
+    float
+       density estimate f_i = 1/[ (M-1) * exp(-psi(k)) * V_d * D^d ]
+    
+    References
+    ----------                                                                                                                            
+    .. [1] N. Leonenko, L. Pronzato, V. Savani, "A class of Rényi information estimators for multidimensional densities.", Ann. Statist. 36 (5) 2153 - 2182, 2008
+
+    """
+    
+    if (data_base is not None):
+        if (len(np.shape(data)) != len(np.shape(data_base))):
+            raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
+    if (len(np.shape(data)) == 1):
+        dim = 1
+        data = np.reshape(data, (len(data), 1))
+        if (data_base is not None):
+            data_base = np.reshape(data_base, (len(data_base), 1))
+    elif (len(np.shape(data)) == 2):
+        if (data_base is not None) and (np.shape(data)[1] != np.shape(data_base)[1]):
+            raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
+        dim = np.shape(data)[1]
+    else:
+        raise ValueError("tropygal: Data array(s) should be of form [N, dim], or 1D array(s)")
+
+    if not isinstance(k, (int, np.integer)):
+        raise TypeError(f"tropygal: k must be an integer, got {type(dim).__name__}")
+    
+    N = np.shape(data)[0]
+    if (data_base is not None):
+        M = np.shape(data_base)[0]
+        tree = KDTree(data_base, leafsize=10) # default leafsize=10
+    else:
+        M = N
+        tree = KDTree(data, leafsize=10) # default leafsize=10
+        
+    dist, ind = tree.query(data, k=k+1, workers=workers) # workers is number of threads. -1 means all threads; k+1 because the first is the particle itself
+
+    # Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).
+    # In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN >0
+
+    dist_kNN = dist[:,k].copy()
+    idx_to_fix = np.where(dist_kNN == 0)[0]
+    if len(idx_to_fix) > 0: # Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)
+        #print ('tropygal:', len(idx_to_fix),' points with zero D_NN. Taking next neighbors until D_NN>0...')
+        # For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.
+        # In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10 (k=15), this is ~ 10^{-7} (~ 10^{-13}). So, for samples w/ N<10^10, k+15 should be enough:
+        max_k = min(k+15, N)  # Query up to k+15 neighbors, but not all points
+        dists_fixed, _ = tree.query(data[idx_to_fix], k=max_k+1, workers=workers)
+
+        # Find the first nonzero distance for each affected point
+        for i, dist_row in zip(idx_to_fix, dists_fixed):
+            nonzero_NN = dist_row[dist_row > 0]  # Ignore self-matches (zero distances)
+            if len(nonzero_NN) > 0:
+                dist_kNN[i] = nonzero_NN[k-1]  # Take k-th first nonzero distance
+            else:
+                print ('tropygal: point', i, 'with no neighbor with D_NN>0 found.')
+
+    f = np.exp(psi(k))/( (M-1)*V_d(dim)*dist_kNN**dim )
+
+    if (correct_bias==True):
+        # The fraction of the volume around particle i inside the domain:
+        log_frac_vol = np.zeros(N)
+        
+        if (vol_correction=='cube'):
+            if l_cube_over_d is None:
+                l_cube_over_d = 2/np.sqrt(dim)
+            l_cube = l_cube_over_d * dist_kNN
+            for j in range(dim):
+                if (data_base is not None):
+                    xmax = max(data_base[:, j])
+                    xmin = min(data_base[:, j])
+                else:
+                    xmax = max(data[:, j])
+                    xmin = min(data[:, j])
+
+                y = np.minimum(np.maximum(data[:, j], xmin), xmax)
+
+                dx_max_over_l_cube = (xmax - y) / l_cube # we only need to correct if this is < 1/2, i.e. if the volume of the cube goes beyond support
+                dx_min_over_l_cube = (y - xmin) / l_cube # we only need to correct if this is < 1/2
+
+                needs_correc = dx_max_over_l_cube < 0.5
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
+
+                needs_correc = dx_min_over_l_cube < 0.5
+                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
+            correction = np.exp(log_frac_vol)
+        else:
+            # raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube', 'actions' or 'sph'")
+            raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube'.")
+
+        return f/correction
+    else:
+        return f
+#-----------------------------
 def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
     """
     Estimate of (Shannon/Jaynes) differential entropy
@@ -48,7 +174,7 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     It also stores the density of states if the DF is a function of integrals only.
     For precise estimates, we also want all (x_1, x_2..., x_dim) to be order unit.
 
-    S is estimated as (1/N) * sum_i=1^N ln(f_i),
+    S is estimated as - (1/N) * sum_i ( ln(f_i) - ln(mu_i),
     where f_i is the estimate of the DF f around point/particle/star i
     For NN (Nerest Neighbor) method:
     From e.g. Eq. (10) in Leonenko, Pronzato, Savani (2008):
@@ -83,84 +209,17 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     Returns
     -------
     float
-       entropy estimate -<ln(f/mu)> = - (1/N)*sum_i=1^N ln(f_i/mu_i)
+       entropy estimate -<ln(f/mu)> = - (1/N)*sum_i ln(f_i/mu_i)
     
     References
     ----------                                                                                                                            
     .. [1] N. Leonenko, L. Pronzato, V. Savani, "A class of Rényi information estimators for multidimensional densities.", Ann. Statist. 36 (5) 2153 - 2182, 2008
     """
 
-    if (len(np.shape(data)) == 1):
-        dim = 1
-        data = np.reshape(data, (len(data), 1))
-    elif (len(np.shape(data)) == 2):
-        dim = np.shape(data)[1]
-    else:
-        raise ValueError('tropygal: Array with data should be of form [N, dim]')
-    
-    N = np.shape(data)[0]
-    
-    tree = KDTree(data, leafsize=10) # default leafsize=10
-    
-    dist, ind = tree.query(data, k=k+1, workers=workers) # workers is number of threads. -1 means all threads; k+1 because the first is the particle itself
-
-    # Improve correction for points with D_NN = 0 (critical for bootstraps, where several points are repeated in the data).
-    # In the new version, if D_NN=0, we consider these as same points and just consider them to be copies of the same point, with D_NN to the next neighbor with D_NN >0
-
-    dist_kNN = dist[:,k].copy()
-    idx_to_fix = np.where(dist_kNN == 0)[0]
-    if len(idx_to_fix) > 0: # Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)
-        #print ('tropygal:', len(idx_to_fix),' points with zero D_NN. Taking next neighbors until D_NN>0...')
-        # For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.
-        # In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N<10^7, k+15 should be enough:
-        max_k = min(k+15, N)  # Query up to k+15 neighbors, but not all points
-        dists_fixed, _ = tree.query(data[idx_to_fix], k=max_k+1, workers=workers)
-
-        # Find the first nonzero distance for each affected point
-        for i, dist_row in zip(idx_to_fix, dists_fixed):
-            nonzero_NN = dist_row[dist_row > 0]  # Ignore self-matches (zero distances)
-            if len(nonzero_NN) > 0:
-                dist_kNN[i] = nonzero_NN[k-1]  # Take k-th first nonzero distance
-            else:
-                print ('tropygal: point', i, 'with no neighbor with D_NN>0 found.')
-
-    ln_D = np.log(dist_kNN)
-    
-#    ln_f = -np.log(N-1.) - np.euler_gamma - np.log(V_d(dim)) - dim*ln_D
-#    ln_f = -psi(N) + psi(k) - np.log(V_d(dim)) - dim*ln_D
-    avg_ln_f = np.mean(-np.log(N-1.) + psi(k) - np.log(V_d(dim)) - dim*ln_D)
-    avg_ln_mu = np.mean(np.log(mu))
-
-    if (correct_bias==True):
-        # The fraction of the volume around particle i inside the domain:
-        log_frac_vol = np.zeros(N)
-        
-        if (vol_correction=='cube'):
-            if l_cube_over_d is None:
-                l_cube_over_d = 2/np.sqrt(dim)
-            l_cube = l_cube_over_d * dist_kNN
-            for j in range(dim):
-                xmax = max(data[:, j])
-                xmin = min(data[:, j])
-
-                dx_max_over_l_cube = (xmax - data[:, j]) / l_cube # we only need to correct if this is < 1/2, i.e. if the volume of the cube goes beyond support
-                dx_min_over_l_cube = (data[:, j] - xmin) / l_cube # we only need to correct if this is < 1/2
-
-                needs_correc = dx_max_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-
-                needs_correc = dx_min_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
-            correction = np.mean(log_frac_vol)
-        else:
-            correction = 0
-            # raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube', 'actions' or 'sph'")
-            raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube'.")
-        return -avg_ln_f + avg_ln_mu + correction
-    else:
-        return -avg_ln_f + avg_ln_mu
+    f = density(data, data_base=None, k=k, correct_bias=correct_bias, vol_correction=vol_correction, l_cube_over_d=l_cube_over_d, workers=workers)
+    return -np.mean(np.log(f)) + np.mean(np.log(mu)) # return S = - <ln (f/mu)>
 #-----------------------------
-def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
+def cross_entropy(data, data_base, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_over_d=None, workers=-1):
     """
     Estimate of the cross entropy H = - int f0 ln (f/mu) d^dim x.
     The factor mu ensures that f/mu is dimensionless and
@@ -179,9 +238,9 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
 
     Parameters
     ----------
-    data1: array [N, dim]
+    data: array [N, dim]
        Data points of sample 1
-    data2: array [M, dim]
+    data_base: array [M, dim]
        Data points of sample 2
     mu: float number or array of size N
        It ensures the argument of ln() is dimensionless.
@@ -207,79 +266,8 @@ def cross_entropy(data1, data2, mu=1, k=1, correct_bias=False, vol_correction='c
        cross entropy estimate -<ln(f/mu)> = - (1/N)*sum_i=1^N ln(f_i/mu_i)
     """
 
-    if (len(np.shape(data1)) != len(np.shape(data2))):
-        raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
-        return np.nan
-    if (len(np.shape(data1)) == 1):
-        dim = 1
-        data1 = np.reshape(data1, (len(data1), 1))
-        data2 = np.reshape(data2, (len(data2), 1))
-    elif (len(np.shape(data1)) == 2):
-        if (np.shape(data1)[1] != np.shape(data2)[1]):
-            raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
-        dim = np.shape(data1)[1]
-    else:
-        raise ValueError("tropygal: Data arrays should be of form [N, dim] and [M, dim], or 1D arrays")
-        return np.nan
-    
-    N = np.shape(data1)[0]
-    M = np.shape(data2)[0]
-    
-    tree = KDTree(data2, leafsize=10) # default leafsize=10
-    dist, ind = tree.query(data1, k=k+1, workers=workers) # workers is number of threads. -1 means all threads
-
-    dist_kNN = dist[:,k].copy()
-    idx_to_fix = np.where(dist_kNN == 0)[0]
-    if len(idx_to_fix) > 0: # Number of points with zero distance (typically, if not zero, very small compared to N, unless using bootstrap samples)
-        #print ('tropygal:', len(idx_to_fix),' points with zero D_NN. Taking next neighbors until D_NN>0...')
-        # For points with D_NN=0, we look for the next neighbor, but there may be points repeated several times.
-        # In bootstraps, the probability por a point to be picked k times is ~ e^{-1}/k!. For k=10, this is ~ 10^{-7}. So, for samples w/ N<10^7, k+15 should be enough:
-        max_k = min(k+15, N)  # Query up to k+15 neighbors, but not all points
-        dists_fixed, _ = tree.query(data1[idx_to_fix], k=max_k+1, workers=workers)
-
-        # Find the first nonzero distance for each affected point
-        for i, dist_row in zip(idx_to_fix, dists_fixed):
-            nonzero_NN = dist_row[dist_row > 0]  # Ignore self-matches (zero distances)
-            if len(nonzero_NN) > 0:
-                dist_kNN[i] = nonzero_NN[k-1]  # Take k-th first nonzero distance
-            else:
-                print ('tropygal: point', i, 'with no neighbor with D_NN>0 found.')
-
-    ln_D = np.log(dist_kNN)
-
-    avg_ln_f = np.mean(-np.log(M) + psi(k) - np.log(V_d(dim)) - dim*ln_D)
-    avg_ln_mu = np.mean(np.log(mu))
-
-    if (correct_bias==True):
-        # The fraction of the volume around particle i inside the domain:
-        log_frac_vol = np.zeros(len(dist_kNN))
-
-        if (vol_correction=='cube'):
-            if l_cube_over_d is None:
-                l_cube_over_d = 2/np.sqrt(dim)
-            l_cube = l_cube_over_d * dist_kNN
-            for j in range(dim):
-                xmax = max(data2[:, j])
-                xmin = min(data2[:, j])
-
-                y = np.minimum(np.maximum(data1[:, j], xmin), xmax)
-
-                dx_max_over_l_cube = (xmax - y) / l_cube # we only need to correct if this is < 1, i.e. if the volume of the ball goes beyond support
-                dx_min_over_l_cube = (y - xmin) / l_cube # we only need to correct if this is < 1
-
-                needs_correc = dx_max_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_max_over_l_cube[needs_correc])
-
-                needs_correc = dx_min_over_l_cube < 0.5
-                log_frac_vol[needs_correc] = log_frac_vol[needs_correc] + np.log(0.5 + dx_min_over_l_cube[needs_correc])
-            correction = np.mean(log_frac_vol)
-        else:
-            correction = 0
-            # raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube', 'actions' or 'sph'")
-            raise ValueError("tropygal: vol_correction is the volume around each point assumed for the bias correction. Current possible values: 'cube'.")
-        return -avg_ln_f + avg_ln_mu + correction
-    else:
-        return -avg_ln_f + avg_ln_mu
+    f = density(data, data_base=data_base, k=k, correct_bias=correct_bias, vol_correction=vol_correction, l_cube_over_d=l_cube_over_d, workers=workers)
+    return -np.mean(np.log(f)) + np.mean(np.log(mu)) # return S = - <ln (f/mu)>
 #-----------------------------
 def C_k(q, k=1):
     """
