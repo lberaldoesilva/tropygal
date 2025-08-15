@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'tropygal'
-copyright = '2024, Leandro Beraldo e Silva'
+copyright = '205, Leandro Beraldo e Silva'
 author = 'Leandro Beraldo e Silva'
-release = '0.1.1'
+release = '0.1.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

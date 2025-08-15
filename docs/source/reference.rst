@@ -6,6 +6,8 @@ API reference
 
 .. autofunction:: tropygal.V_d
 
+.. autofunction:: tropygal.density
+
 .. autofunction:: tropygal.entropy
 
 .. autofunction:: tropygal.cross_entropy
