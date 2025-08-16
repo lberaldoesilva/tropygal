@@ -22,7 +22,7 @@ Development of **tropygal** was supported by the following research grants
 - CNPq (309723/2020-5)  
 - Heising Simons Foundation grant \# 2022-3927
 
-Brazilian funding agencies:
+Funding agencies:
 
 - **NASA ATP** - NASA Astrophysical Theory Program (US)  
 - **NSF** - National Science Foundation (US)  
