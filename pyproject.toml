@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tropygal"
-version = "0.1.2"
+version = "0.1.3"
 description = "Entropy estimators for galactic dynamics"
 readme = "README.md"
 authors = [

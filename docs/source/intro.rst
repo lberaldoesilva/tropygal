@@ -10,8 +10,8 @@ galactic dynamics.  The entropy is estimated with a Monte Carlo
 method, i.e. using a sample of the underlying pdf, without assuming
 any specific form for :math:`f(\vec{w})`.  The same estimators can
 also be used very broadly in other contexts.  Detailed expressions and
-numerical tests can be found in `Beraldo e Silva et al (2024)
-<https://arxiv.org/abs/2407.07947>`__. Please cite this paper if you
+numerical tests can be found in `Beraldo e Silva et al (2025)
+<https://ui.adsabs.harvard.edu/abs/2024arXiv240707947B/abstract>`__. Please cite this paper if you
 use :math:`\texttt{tropygal}`.
 
 Main expressions
@@ -63,7 +63,7 @@ Change to normalized coordinates
 
 Note that :math:`\vec{w}` involves coordinates of possibly different
 units and very dissimilar magnitudes (e.g. positions and
-velocities). To estimate the entropy, we calculate (Euclidean)
+velocities). To estimate the entropy, we calculate Euclidean
 distances between sample points, so it's useful to change variables to
 coordinates normalized by the respective dispersions, :math:`x' =
 x/\sigma_x, y' = y/\sigma_y, z' = z/\sigma_z` and so on, allowing a
@@ -140,7 +140,7 @@ smaller fluctuations in the entropy estimate. The bias correction
 proposed by `Charzynska & Gambin (2015)
 <https://www.mdpi.com/1099-4300/18/1/13>`__ seems to suppress the bias
 without introducing extra noise - see also Fig. 5 in `Beraldo e Silva
-et al (2024) <https://arxiv.org/abs/2407.07947>`__.
+et al (2025) <https://ui.adsabs.harvard.edu/abs/2024arXiv240707947B/abstract>`__.
 
 See the tutorials for more complete examples.
   
