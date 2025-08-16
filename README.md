@@ -1,5 +1,5 @@
 $\texttt{tropygal}$ is a pure-python package for entropy estimates in
-the context of galacitc dynamics, but can be used in other contexts
+the context of galactic dynamics, but can be used in other contexts
 too. It also provides functions for analytical distribution functions
 and density of states for models that have analytical
 expressions.
