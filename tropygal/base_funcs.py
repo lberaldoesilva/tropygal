@@ -44,7 +44,7 @@ def density(data, data_base=None, k=1, correct_bias=False, vol_correction='cube'
     """
     Estimate the density (pdf) for best use in NN entropy estimate.
 
-    f_i = 1/[ (M-1) * exp(-psi(k)) * V_d * D^d ], where:
+    f_i = exp(psi(k)) / [ (M-1) * V_d * D^d ], where:
     M is size of sample building the tree
     psi is the digamma function
     V_d is the volume of unitary hypersphere in d-dimensions
@@ -72,7 +72,7 @@ def density(data, data_base=None, k=1, correct_bias=False, vol_correction='cube'
     Returns
     -------
     float
-       density estimate f_i = 1/[ (M-1) * exp(-psi(k)) * V_d * D^d ]
+       density estimate f_i = exp(psi(k)) / [ (M-1) * V_d * D^d ]
     
     References
     ----------                                                                                                                            
@@ -178,7 +178,7 @@ def entropy(data, mu=1, k=1, correct_bias=False, vol_correction='cube', l_cube_o
     where f_i is the estimate of the DF f around point/particle/star i
     For NN (Nerest Neighbor) method:
     From e.g. Eq. (10) in Leonenko, Pronzato, Savani (2008):
-    f_i = 1/[ (N-1) * exp(-psi(k)) * V_d * D^d ], where:
+    f_i = exp(psi(k)) / [ (N-1)  * V_d * D^d ], where:
     N is sample size
     psi is the digamma function
     V_d is the volume of unitary hypersphere in d-dimensions
@@ -229,7 +229,7 @@ def cross_entropy(data, data_base, mu=1, k=1, correct_bias=False, vol_correction
     where f_i is the estimate of the DF f based on the dist. of point i in sample 1 to its kth neighbor in sample 2.
     For NN (Nerest Neighbor) method:
     From e.g. Eq. (11) in Leonenko, Pronzato, Savani (2008):
-    f_i = 1/[ M * exp(-psi(k)) * V_d * D^d ], where:
+    f_i = exp(psi(k)) / [ M * V_d * D^d ], where:
     N is size of sample 1,
     M is size of sample 2,
     psi is the digamma function,
